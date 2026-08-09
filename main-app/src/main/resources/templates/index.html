@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#2F6FEE">
+  <title>FileCabinet — Go Paperless. Digital Records for Legal &amp; Financial Teams</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link th:href="@{/css/filecabinet.css}" href="../static/css/filecabinet.css" rel="stylesheet">
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top">
+  <div class="container-fluid px-4 px-lg-5">
+    <a class="navbar-brand fw-bold" th:href="@{/}"><i class="bi bi-archive-fill text-primary me-2"></i>FileCabinet</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#guestNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="guestNav">
+      <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
+        <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
+        <li class="nav-item"><a class="nav-link" href="#how-it-works">How it works</a></li>
+        <li class="nav-item ms-lg-2"><a class="btn btn-outline-primary btn-sm" th:href="@{/login}">Sign in</a></li>
+        <li class="nav-item ms-lg-2"><a class="btn btn-primary btn-sm" th:href="@{/register}">Create account</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="container py-5">
+  <div class="row align-items-center g-5">
+    <div class="col-lg-6">
+      <span class="badge text-bg-light text-primary border mb-3">Paperless Office Platform</span>
+      <h1 class="display-5 fw-bold mb-3">Retire the filing cabinet.<br>Go fully digital.</h1>
+      <p class="lead text-muted">FileCabinet replaces paper folders and shared drives with one digital home for your legal and financial records — structured, reviewed, and searchable the moment they're approved.</p>
+      <div class="d-flex gap-3 flex-wrap mt-4">
+        <a class="btn btn-primary btn-lg px-4" th:href="@{/register}">Start going paperless</a>
+        <a class="btn btn-outline-secondary btn-lg px-4" th:href="@{/login}">Sign in</a>
+      </div>
+      <div class="d-flex gap-4 flex-wrap mt-4 text-muted small fw-semibold">
+        <div><i class="bi bi-shield-check text-primary me-1"></i>Secure digital access</div>
+        <div><i class="bi bi-ui-checks text-primary me-1"></i>Digitized, searchable records</div>
+        <div><i class="bi bi-check2-circle text-primary me-1"></i>Paperless approvals</div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <strong>My Documents</strong>
+          <span class="badge text-bg-warning">3 need review</span>
+        </div>
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-file-earmark-text text-primary me-2"></i>Q3 Vendor Invoice — Acme Corp</span>
+            <span class="badge text-bg-success">Approved</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-file-earmark-text text-primary me-2"></i>Lease Agreement — Downtown Office</span>
+            <span class="badge text-bg-warning">Structured</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-file-earmark-text text-primary me-2"></i>Consulting Agreement — Nova LLC</span>
+            <span class="badge text-bg-danger">Rejected</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-file-earmark-text text-primary me-2"></i>Receipt — Office Supplies</span>
+            <span class="badge text-bg-secondary">Uploaded</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section id="features" class="py-5 bg-light border-top">
+  <div class="container">
+    <h2 class="text-center mb-2">Everything you need to go paperless</h2>
+    <p class="text-center text-muted mb-5">From a drawer full of paper to a digital record, without the guesswork.</p>
+    <div class="row g-4">
+      <div class="col-md-3 col-sm-6">
+        <div class="card h-100 border-0">
+          <div class="card-body">
+            <i class="bi bi-folder2-open text-primary fs-3 mb-2 d-block"></i>
+            <h3 class="h6 fw-bold">A digital archive, not a drawer</h3>
+            <p class="text-muted small mb-0">Every invoice, contract, receipt and filing lives in one searchable digital place, not a folder or a filing cabinet.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="card h-100 border-0">
+          <div class="card-body">
+            <i class="bi bi-ui-checks text-primary fs-3 mb-2 d-block"></i>
+            <h3 class="h6 fw-bold">Structured, searchable records</h3>
+            <p class="text-muted small mb-0">Clerks turn each scanned or uploaded document into a structured digital record with a simple field form.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="card h-100 border-0">
+          <div class="card-body">
+            <i class="bi bi-check2-circle text-primary fs-3 mb-2 d-block"></i>
+            <h3 class="h6 fw-bold">Paperless approvals</h3>
+            <p class="text-muted small mb-0">Swap routing slips and wet signatures for a digital review — admins approve or reject each record online.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="card h-100 border-0">
+          <div class="card-body">
+            <i class="bi bi-shield-check text-primary fs-3 mb-2 d-block"></i>
+            <h3 class="h6 fw-bold">Secure by design</h3>
+            <p class="text-muted small mb-0">Going digital doesn't mean losing control — role-based access keeps every record visible to the right people only.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how-it-works" class="py-5">
+  <div class="container">
+    <h2 class="text-center mb-5">From paper to a fully digital record, in three steps</h2>
+    <div class="row g-4">
+      <div class="col-md-4 text-center">
+        <span class="badge rounded-pill text-bg-dark fs-6 mb-2">1</span>
+        <h3 class="h6 fw-bold">Digitize</h3>
+        <p class="text-muted small mb-0">Upload an invoice, contract, receipt or legal filing instead of filing it away on paper.</p>
+      </div>
+      <div class="col-md-4 text-center">
+        <span class="badge rounded-pill text-bg-dark fs-6 mb-2">2</span>
+        <h3 class="h6 fw-bold">Structure</h3>
+        <p class="text-muted small mb-0">Add the key fields yourself to turn the file into a structured digital record.</p>
+      </div>
+      <div class="col-md-4 text-center">
+        <span class="badge rounded-pill text-bg-dark fs-6 mb-2">3</span>
+        <h3 class="h6 fw-bold">Review</h3>
+        <p class="text-muted small mb-0">An admin approves or rejects the record online — no paper trail required.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="py-5 bg-light border-top">
+  <div class="container">
+    <div class="row g-5 align-items-start">
+      <div class="col-lg-5">
+        <h2>About FileCabinet</h2>
+        <p class="text-muted">FileCabinet helps small back-office teams retire the filing cabinet. Instead of paper piling up in folders and drawers, legal and financial documents get digitized, structured into records your team can search, and reviewed online before they're final.</p>
+      </div>
+      <div class="col-lg-7">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="card h-100">
+              <div class="card-body">
+                <i class="bi bi-person text-primary fs-4 mb-2 d-block"></i>
+                <h3 class="h6">Guest</h3>
+                <p class="text-muted small mb-0">Browse the product, then register or sign in.</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card h-100">
+              <div class="card-body">
+                <i class="bi bi-person-badge text-primary fs-4 mb-2 d-block"></i>
+                <h3 class="h6">Clerk</h3>
+                <p class="text-muted small mb-0">Upload and structure your own documents.</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card h-100">
+              <div class="card-body">
+                <i class="bi bi-shield-check text-primary fs-4 mb-2 d-block"></i>
+                <h3 class="h6">Admin</h3>
+                <p class="text-muted small mb-0">Everything a clerk can do, plus manage categories and approve documents across the team.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="border-top py-4 text-muted small">
+  <div class="container d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <span class="fw-bold text-dark"><i class="bi bi-archive-fill text-primary me-2"></i>FileCabinet</span>
+    <span>&copy; 2026 FileCabinet.</span>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

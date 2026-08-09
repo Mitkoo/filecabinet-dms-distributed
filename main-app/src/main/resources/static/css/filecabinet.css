@@ -1,0 +1,22 @@
+:root {
+  --bs-primary: #2F6FEE;
+  --bs-primary-rgb: 47, 111, 238;
+  --bs-link-color: #2F6FEE;
+  --bs-link-color-rgb: 47, 111, 238;
+  --bs-link-hover-color: #1D53C4;
+  --bs-link-hover-color-rgb: 29, 83, 196;
+  --bs-body-font-family: 'Public Sans', system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+body { font-family: var(--bs-body-font-family); }
+
+.avatar-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bs-primary);
+  color: #fff;
+  font-weight: 600;
+  font-size: .8rem;
+  text-transform: uppercase;
+}

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#2F6FEE">
+  <title th:text="'Start Review — ' + ${document.title} + ' · FileCabinet'">Start Review · FileCabinet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link th:href="@{/css/filecabinet.css}" href="../static/css/filecabinet.css" rel="stylesheet">
+</head>
+<body>
+
+<nav th:replace="~{fragments :: appNavbar(null)}"></nav>
+
+<div class="container py-4">
+
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a th:href="@{/documents}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a th:href="@{/documents/{id}(id=${document.id})}" th:text="${document.title}">Document</a></li>
+      <li class="breadcrumb-item active">Start Review</li>
+    </ol>
+  </nav>
+
+  <h1 class="h3 mb-1">Start Review Workflow</h1>
+  <p class="text-muted mb-4" th:if="${fixedPipeline}">
+    Invoices follow a fixed approval pipeline for <strong th:text="${document.title}">this document</strong>: buyer, then manager, then accountant. Pick who fills the buyer and manager steps — the accountant step is assigned automatically.
+  </p>
+  <p class="text-muted mb-4" th:unless="${fixedPipeline}">Choose reviewers and the order they should review <strong th:text="${document.title}">this document</strong> in. Each reviewer approves before the next one is notified.</p>
+
+  <div class="alert alert-danger d-flex align-items-center gap-2" th:if="${errorMessage}" th:text="${errorMessage}">
+    <i class="bi bi-exclamation-triangle"></i>Something went wrong.
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-header bg-white fw-semibold">Reviewers</div>
+        <div class="card-body">
+
+          <div th:if="${fixedPipeline}">
+            <div class="alert alert-warning" th:if="${#lists.isEmpty(buyers)}">
+              No user has the Buyer role yet. Assign one from <a th:href="@{/users}">Manage Users</a> before starting this review.
+            </div>
+            <div class="alert alert-warning" th:if="${#lists.isEmpty(managers)}">
+              No user has the Manager role yet. Assign one from <a th:href="@{/users}">Manage Users</a> before starting this review.
+            </div>
+            <div class="alert alert-warning" th:if="${accountant == null}">
+              No user has the Accountant role yet. Assign one from <a th:href="@{/users}">Manage Users</a> before starting this review.
+            </div>
+
+            <form th:action="@{/documents/{id}/workflow(id=${document.id})}" method="post" novalidate>
+
+              <div class="row g-2 align-items-center mb-3">
+                <div class="col-auto">
+                  <span class="badge rounded-pill text-bg-primary step-number">1</span>
+                </div>
+                <div class="col">
+                  <label class="form-label small mb-1 text-muted">Buyer</label>
+                  <select class="form-select" name="reviewerIds" required>
+                    <option value="">Select a buyer…</option>
+                    <option th:each="user : ${buyers}" th:value="${user.id}"
+                            th:with="displayName=${#strings.isEmpty(user.fullName)} ? ${user.username} : ${user.fullName}"
+                            th:text="${displayName} + ' (' + ${user.role} + ')'">Jane Doe (BUYER)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row g-2 align-items-center mb-3">
+                <div class="col-auto">
+                  <span class="badge rounded-pill text-bg-primary step-number">2</span>
+                </div>
+                <div class="col">
+                  <label class="form-label small mb-1 text-muted">Manager</label>
+                  <select class="form-select" name="reviewerIds" required>
+                    <option value="">Select a manager…</option>
+                    <option th:each="user : ${managers}" th:value="${user.id}"
+                            th:with="displayName=${#strings.isEmpty(user.fullName)} ? ${user.username} : ${user.fullName}"
+                            th:text="${displayName} + ' (' + ${user.role} + ')'">Jane Doe (MANAGER)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row g-2 align-items-center mb-3" th:if="${accountant != null}">
+                <div class="col-auto">
+                  <span class="badge rounded-pill text-bg-secondary step-number">3</span>
+                </div>
+                <div class="col">
+                  <label class="form-label small mb-1 text-muted">Accountant</label>
+                  <input type="text" class="form-control" disabled
+                         th:with="displayName=${#strings.isEmpty(accountant.fullName)} ? ${accountant.username} : ${accountant.fullName}"
+                         th:value="${displayName} + ' (' + ${accountant.role} + ') — assigned automatically'">
+                  <input type="hidden" name="reviewerIds" th:value="${accountant.id}">
+                </div>
+              </div>
+
+              <div class="mt-4">
+                <label class="form-label" for="message">Note to reviewers (optional)</label>
+                <textarea class="form-control" id="message" name="message" rows="3" placeholder="Anything reviewers should know before they start…"></textarea>
+              </div>
+
+              <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary px-4"
+                        th:disabled="${#lists.isEmpty(buyers) or #lists.isEmpty(managers) or accountant == null}">
+                  <i class="bi bi-signpost-split me-2"></i>Start Workflow
+                </button>
+                <a class="btn btn-outline-secondary px-4" th:href="@{/documents/{id}(id=${document.id})}">Cancel</a>
+              </div>
+            </form>
+          </div>
+
+          <form th:unless="${fixedPipeline}" th:action="@{/documents/{id}/workflow(id=${document.id})}" method="post" novalidate id="workflowForm">
+
+            <div id="reviewerRows">
+              <div class="row g-2 align-items-center mb-2 reviewer-row">
+                <div class="col-auto">
+                  <span class="badge rounded-pill text-bg-primary step-number">1</span>
+                </div>
+                <div class="col">
+                  <select class="form-select" name="reviewerIds" required>
+                    <option value="">Select a reviewer…</option>
+                    <option th:each="user : ${users}" th:value="${user.id}"
+                            th:with="displayName=${#strings.isEmpty(user.fullName)} ? ${user.username} : ${user.fullName}"
+                            th:text="${displayName} + ' (' + ${user.role} + ')'">Jane Doe (CLERK)</option>
+                  </select>
+                </div>
+                <div class="col-auto">
+                  <button type="button" class="btn btn-outline-danger btn-sm remove-row" disabled><i class="bi bi-x-lg"></i></button>
+                </div>
+              </div>
+            </div>
+
+            <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="addReviewer">
+              <i class="bi bi-plus-lg me-1"></i>Add another reviewer
+            </button>
+
+            <div class="mt-4">
+              <label class="form-label" for="message">Note to reviewers (optional)</label>
+              <textarea class="form-control" id="message" name="message" rows="3" placeholder="Anything reviewers should know before they start…"></textarea>
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+              <button type="submit" class="btn btn-primary px-4"><i class="bi bi-signpost-split me-2"></i>Start Workflow</button>
+              <a class="btn btn-outline-secondary px-4" th:href="@{/documents/{id}(id=${document.id})}">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card">
+        <div class="card-header bg-white fw-semibold">How this works</div>
+        <div class="card-body text-muted small">
+          <p th:if="${fixedPipeline}">Invoices always route <strong>buyer → manager → accountant</strong>, in that order. The accountant step is filled automatically since any accountant can handle it.</p>
+          <p th:unless="${fixedPipeline}">Reviewers act <strong>one at a time</strong>, in the order listed. The document moves to the next reviewer only after the current one approves.</p>
+          <p>If any reviewer rejects, the workflow stops and the document is marked rejected.</p>
+          <p class="mb-0">You can send reminders and follow the full timeline from the workflow page once it's started.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<template id="reviewerRowTemplate" th:unless="${fixedPipeline}">
+  <div class="row g-2 align-items-center mb-2 reviewer-row">
+    <div class="col-auto">
+      <span class="badge rounded-pill text-bg-primary step-number">#</span>
+    </div>
+    <div class="col">
+      <select class="form-select" name="reviewerIds" required>
+        <option value="">Select a reviewer…</option>
+        <option th:each="user : ${users}" th:value="${user.id}"
+                th:with="displayName=${#strings.isEmpty(user.fullName)} ? ${user.username} : ${user.fullName}"
+                th:text="${displayName} + ' (' + ${user.role} + ')'">Jane Doe (CLERK)</option>
+      </select>
+    </div>
+    <div class="col-auto">
+      <button type="button" class="btn btn-outline-danger btn-sm remove-row"><i class="bi bi-x-lg"></i></button>
+    </div>
+  </div>
+</template>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:unless="${fixedPipeline}">
+  const rowsContainer = document.getElementById('reviewerRows');
+  const template = document.getElementById('reviewerRowTemplate');
+
+  function renumberRows() {
+    const rows = rowsContainer.querySelectorAll('.reviewer-row');
+    rows.forEach((row, index) => {
+      row.querySelector('.step-number').textContent = index + 1;
+      row.querySelector('.remove-row').disabled = rows.length === 1;
+    });
+  }
+
+  document.getElementById('addReviewer').addEventListener('click', () => {
+    const clone = template.content.cloneNode(true);
+    rowsContainer.appendChild(clone);
+    renumberRows();
+  });
+
+  rowsContainer.addEventListener('click', (event) => {
+    const button = event.target.closest('.remove-row');
+    if (button && !button.disabled) {
+      button.closest('.reviewer-row').remove();
+      renumberRows();
+    }
+  });
+
+  renumberRows();
+</script>
+</body>
+</html>

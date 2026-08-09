@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#2F6FEE">
+  <title>My Profile · FileCabinet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link th:href="@{/css/filecabinet.css}" href="../static/css/filecabinet.css" rel="stylesheet">
+</head>
+<body>
+
+<nav th:replace="~{fragments :: appNavbar(null)}"></nav>
+
+<div class="container py-4">
+
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a th:href="@{/documents}">Dashboard</a></li>
+      <li class="breadcrumb-item active">My Profile</li>
+    </ol>
+  </nav>
+
+  <h1 class="h3 mb-4">My Profile</h1>
+
+  <div class="alert alert-success d-flex align-items-center gap-2" th:if="${successMessage}" th:text="${successMessage}">
+    <i class="bi bi-check-circle"></i>Profile updated.
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="card">
+        <div class="card-body text-center">
+          <span class="avatar-circle d-inline-flex align-items-center justify-content-center mb-3" style="width:64px;height:64px;font-size:1.5rem;"
+                th:text="${#strings.substring(currentUser.username,0,1)}">J</span>
+          <h2 class="h5 mb-0" th:text="${currentUser.username}">jane.doe</h2>
+          <p class="text-muted small mb-2" th:text="${currentUser.email}">jane.doe@company.com</p>
+          <span class="badge text-bg-primary" th:text="${currentUser.role}">ADMIN</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-header bg-white fw-semibold">Personal &amp; company details</div>
+        <div class="card-body">
+          <form th:action="@{/profile}" th:object="${profileForm}" method="post" novalidate>
+
+            <div class="mb-3">
+              <label class="form-label" for="fullName">Full name</label>
+              <input type="text" class="form-control" id="fullName" th:field="*{fullName}"
+                     th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid'" placeholder="e.g. Jane Doe">
+              <div class="invalid-feedback" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}">Full name is too long.</div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label" for="phone">Phone</label>
+                <input type="text" class="form-control" id="phone" th:field="*{phone}"
+                       th:classappend="${#fields.hasErrors('phone')} ? 'is-invalid'" placeholder="e.g. +1 555 0100">
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}">Phone is too long.</div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label" for="jobTitle">Job title</label>
+                <input type="text" class="form-control" id="jobTitle" th:field="*{jobTitle}"
+                       th:classappend="${#fields.hasErrors('jobTitle')} ? 'is-invalid'" placeholder="e.g. Accounts Payable Clerk">
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('jobTitle')}" th:errors="*{jobTitle}">Job title is too long.</div>
+              </div>
+            </div>
+
+            <hr>
+
+            <div class="mb-3">
+              <label class="form-label" for="companyName">Company name</label>
+              <input type="text" class="form-control" id="companyName" th:field="*{companyName}"
+                     th:classappend="${#fields.hasErrors('companyName')} ? 'is-invalid'" placeholder="e.g. Acme Corp">
+              <div class="invalid-feedback" th:if="${#fields.hasErrors('companyName')}" th:errors="*{companyName}">Company name is too long.</div>
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label" for="companyAddress">Company address</label>
+              <textarea class="form-control" id="companyAddress" th:field="*{companyAddress}" rows="2"
+                        th:classappend="${#fields.hasErrors('companyAddress')} ? 'is-invalid'" placeholder="Street, city, country"></textarea>
+              <div class="invalid-feedback" th:if="${#fields.hasErrors('companyAddress')}" th:errors="*{companyAddress}">Company address is too long.</div>
+            </div>
+
+            <button type="submit" class="btn btn-primary px-4">Save changes</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
