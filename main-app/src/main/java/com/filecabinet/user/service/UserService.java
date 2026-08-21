@@ -9,7 +9,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,10 +21,10 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
 
     public User register(String username, String email, String rawPassword) {
-        if (userRepository.findByUsername(username).isPresent()) {
+        if (userRepository.existsByUsername(username)) {
             throw new ServiceExceptions.DuplicateException("Username already taken: " + username);
         }
-        if (userRepository.findByEmail(email).isPresent()) {
+        if (userRepository.existsByEmail(email)) {
             throw new ServiceExceptions.DuplicateException("Email already registered: " + email);
         }
 
@@ -49,9 +48,7 @@ public class UserService {
     }
 
     public List<User> findByRole(Role role) {
-        return userRepository.findByRole(role).stream()
-                .sorted(Comparator.comparing(User::getUsername))
-                .toList();
+        return userRepository.findByRoleOrderByUsernameAsc(role);
     }
 
     public User findById(UUID id) {
