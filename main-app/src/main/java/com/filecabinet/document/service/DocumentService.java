@@ -13,6 +13,7 @@ import com.filecabinet.user.model.User;
 import com.filecabinet.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -76,16 +77,17 @@ public class DocumentService {
         return documentRepository.save(document);
     }
 
+    @Transactional
     public void delete(UUID id) {
         if (!documentRepository.existsById(id)) {
             throw new ServiceExceptions.NotFoundException("Document not found: " + id);
         }
-        documentFieldRepository.deleteAll(documentFieldRepository.findByDocumentId(id));
+        documentFieldRepository.deleteByDocumentId(id);
         documentRepository.deleteById(id);
     }
 
     public List<DocumentField> findFields(UUID documentId) {
-        return documentFieldRepository.findByDocumentId(documentId);
+        return documentFieldRepository.findByDocumentIdOrderByFieldName(documentId);
     }
 
     public DocumentField addField(UUID documentId, String fieldName, String fieldValue) {
