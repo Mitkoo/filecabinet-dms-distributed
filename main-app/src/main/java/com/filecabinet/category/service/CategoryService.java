@@ -16,7 +16,7 @@ public class CategoryService {
     private final CategoryRepository categoryRepository;
 
     public Category create(String name, String description) {
-        if (categoryRepository.findByName(name).isPresent()) {
+        if (categoryRepository.existsByName(name)) {
             throw new ServiceExceptions.DuplicateException("Category already exists: " + name);
         }
         Category category = Category.builder()
@@ -27,7 +27,7 @@ public class CategoryService {
     }
 
     public List<Category> findAll() {
-        return categoryRepository.findAll();
+        return categoryRepository.findAllByOrderByNameAsc();
     }
 
     public Category findById(UUID id) {
