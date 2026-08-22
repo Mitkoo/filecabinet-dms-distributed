@@ -3,16 +3,14 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.0</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <groupId>com.filecabinet</groupId>
+        <artifactId>filecabinet-dms-distributed</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
-    <groupId>com.filecabinet</groupId>
-    <artifactId>filecabinet-dms</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <name>filecabinet-dms</name>
-    <description>filecabinet-dms</description>
+    <artifactId>main-app</artifactId>
+    <name>main-app</name>
+    <description>FileCabinet main application</description>
     <url/>
     <licenses>
         <license/>
