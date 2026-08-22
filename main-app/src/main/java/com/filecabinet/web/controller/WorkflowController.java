@@ -112,9 +112,8 @@ public class WorkflowController {
                 currentStep.map(s -> s.getReviewer().getId().equals(currentUser.getId())).orElse(false));
         model.addAttribute("canManage",
                 currentUser.getRole() == Role.ADMIN || workflow.getInitiator().getId().equals(currentUser.getId()));
-        List<WorkflowEvent> unreadNotifications = workflowService.findUnreadNotifications(currentUser.getId());
-        model.addAttribute("unreadNotifications", unreadNotifications.stream().limit(8).toList());
-        model.addAttribute("unreadNotificationCount", unreadNotifications.size());
+        model.addAttribute("unreadNotifications", workflowService.findUnreadNotifications(currentUser.getId()));
+        model.addAttribute("unreadNotificationCount", workflowService.countUnreadNotifications(currentUser.getId()));
         return "workflow-detail";
     }
 

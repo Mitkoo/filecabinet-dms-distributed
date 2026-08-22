@@ -20,12 +20,12 @@ import com.filecabinet.workflow.repository.ReviewWorkflowRepository;
 import com.filecabinet.workflow.repository.WorkflowEventRepository;
 import com.filecabinet.workflow.repository.WorkflowReadRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -35,6 +35,7 @@ import java.util.UUID;
 public class WorkflowService {
 
     private static final Duration REMINDER_COOLDOWN = Duration.ofHours(4);
+    private static final int NOTIFICATION_LIMIT = 8;
 
     private final ReviewWorkflowRepository reviewWorkflowRepository;
     private final ReviewStepRepository reviewStepRepository;
@@ -43,6 +44,7 @@ public class WorkflowService {
     private final DocumentService documentService;
     private final UserService userService;
 
+    @Transactional
     public ReviewWorkflow startWorkflow(UUID documentId, UUID initiatorId, List<UUID> reviewerIds, String message) {
         Document document = documentService.findById(documentId);
         if (document.getStatus() != DocumentStatus.STRUCTURED) {
@@ -96,6 +98,7 @@ public class WorkflowService {
         }
     }
 
+    @Transactional
     public void decide(UUID workflowId, UUID stepId, UUID reviewerId, boolean approve, String comment) {
         ReviewWorkflow workflow = findById(workflowId);
         if (workflow.getStatus() != WorkflowStatus.IN_PROGRESS) {
@@ -128,7 +131,7 @@ public class WorkflowService {
             workflow.setStatus(WorkflowStatus.REJECTED);
             workflow.setCompletedOn(LocalDateTime.now());
             reviewWorkflowRepository.save(workflow);
-            skipRemainingSteps(workflow);
+            reviewStepRepository.skipRemainingSteps(workflow.getId());
             documentService.updateStatus(workflow.getDocument().getId(), DocumentStatus.REJECTED);
             logEvent(workflow, null, WorkflowEventType.COMPLETED, "Workflow rejected.");
         } else if (getCurrentStep(workflow).isEmpty()) {
@@ -140,13 +143,11 @@ public class WorkflowService {
         }
     }
 
+    @Transactional
     public void addComment(UUID workflowId, UUID userId, String message) {
         ReviewWorkflow workflow = findById(workflowId);
         User user = userService.findById(userId);
-        boolean participant = workflow.getInitiator().getId().equals(userId)
-                || reviewStepRepository.findByWorkflowIdOrderByStepOrderAsc(workflowId).stream()
-                    .anyMatch(s -> s.getReviewer().getId().equals(userId));
-        if (!participant) {
+        if (!isParticipant(workflow, userId)) {
             throw new ServiceExceptions.InvalidStateException("Only the initiator or an assigned reviewer can comment.");
         }
         if (workflow.getStatus() != WorkflowStatus.IN_PROGRESS) {
@@ -155,6 +156,7 @@ public class WorkflowService {
         logEvent(workflow, user, WorkflowEventType.COMMENT, message);
     }
 
+    @Transactional
     public void sendReminder(UUID workflowId, UUID requesterId) {
         ReviewWorkflow workflow = findById(workflowId);
         User requester = userService.findById(requesterId);
@@ -175,6 +177,7 @@ public class WorkflowService {
         logEvent(workflow, requester, WorkflowEventType.REMINDER_SENT, "Reminder sent to " + current.getReviewer().getUsername() + ".");
     }
 
+    @Transactional
     public void cancel(UUID workflowId, UUID requesterId) {
         ReviewWorkflow workflow = findById(workflowId);
         User requester = userService.findById(requesterId);
@@ -187,7 +190,7 @@ public class WorkflowService {
         workflow.setStatus(WorkflowStatus.CANCELLED);
         workflow.setCompletedOn(LocalDateTime.now());
         reviewWorkflowRepository.save(workflow);
-        skipRemainingSteps(workflow);
+        reviewStepRepository.skipRemainingSteps(workflow.getId());
         documentService.updateStatus(workflow.getDocument().getId(), DocumentStatus.STRUCTURED);
         logEvent(workflow, requester, WorkflowEventType.CANCELLED, null);
     }
@@ -198,7 +201,7 @@ public class WorkflowService {
     }
 
     public Optional<ReviewWorkflow> findLatestForDocument(UUID documentId) {
-        return reviewWorkflowRepository.findByDocumentIdOrderByCreatedOnDesc(documentId).stream().findFirst();
+        return reviewWorkflowRepository.findFirstByDocumentIdOrderByCreatedOnDesc(documentId);
     }
 
     public List<ReviewStep> getSteps(UUID workflowId) {
@@ -210,9 +213,7 @@ public class WorkflowService {
     }
 
     public Optional<ReviewStep> getCurrentStep(ReviewWorkflow workflow) {
-        return reviewStepRepository.findByWorkflowIdOrderByStepOrderAsc(workflow.getId()).stream()
-                .filter(s -> s.getStatus() == StepStatus.PENDING)
-                .findFirst();
+        return reviewStepRepository.findCurrentStep(workflow.getId());
     }
 
     public List<ReviewWorkflow> findActionableForUser(UUID userId) {
@@ -227,10 +228,10 @@ public class WorkflowService {
         if (workflow.getInitiator().getId().equals(userId)) {
             return true;
         }
-        return reviewStepRepository.findByWorkflowIdOrderByStepOrderAsc(workflow.getId()).stream()
-                .anyMatch(s -> s.getReviewer().getId().equals(userId));
+        return reviewStepRepository.existsByWorkflowIdAndReviewerId(workflow.getId(), userId);
     }
 
+    @Transactional
     public void markRead(UUID workflowId, UUID userId) {
         ReviewWorkflow workflow = findById(workflowId);
         User user = userService.findById(userId);
@@ -240,49 +241,33 @@ public class WorkflowService {
         workflowReadRepository.save(read);
     }
 
+    @Transactional
     public void markAllRead(UUID userId) {
-        for (ReviewWorkflow workflow : reviewWorkflowRepository.findAll()) {
-            if (isParticipant(workflow, userId)) {
-                markRead(workflow.getId(), userId);
-            }
+        LocalDateTime now = LocalDateTime.now();
+        workflowReadRepository.touchAllForReader(userId, now);
+        for (UUID workflowId : reviewWorkflowRepository.findParticipantWorkflowIdsWithoutRead(userId)) {
+            markRead(workflowId, userId);
         }
     }
 
     public List<WorkflowEvent> findUnreadNotifications(UUID userId) {
-        List<WorkflowEvent> notifications = new ArrayList<>();
-        for (ReviewWorkflow workflow : reviewWorkflowRepository.findAll()) {
-            if (!isParticipant(workflow, userId)) {
-                continue;
-            }
-            LocalDateTime lastRead = workflowReadRepository.findByWorkflowIdAndReaderId(workflow.getId(), userId)
-                    .map(WorkflowRead::getLastReadOn)
-                    .orElse(workflow.getCreatedOn().minusSeconds(1));
-            getEvents(workflow.getId()).stream()
-                    .filter(e -> e.getActor() == null || !e.getActor().getId().equals(userId))
-                    .filter(e -> e.getCreatedOn().isAfter(lastRead))
-                    .forEach(notifications::add);
-        }
-        return notifications.stream()
-                .sorted(Comparator.comparing(WorkflowEvent::getCreatedOn).reversed())
-                .toList();
+        return workflowEventRepository.findUnreadForUser(userId, PageRequest.of(0, NOTIFICATION_LIMIT));
+    }
+
+    public long countUnreadNotifications(UUID userId) {
+        return workflowEventRepository.countUnreadForUser(userId);
+    }
+
+    public long countActionableForUser(UUID userId) {
+        return reviewWorkflowRepository.countActionableForUser(userId);
     }
 
     public boolean hasInvolvement(UUID documentId, UUID userId) {
-        return reviewWorkflowRepository.findByDocumentIdOrderByCreatedOnDesc(documentId).stream()
-                .anyMatch(w -> isParticipant(w, userId));
+        return reviewWorkflowRepository.hasInvolvement(documentId, userId);
     }
 
     private boolean canManage(ReviewWorkflow workflow, User user) {
         return user.getRole() == Role.ADMIN || workflow.getInitiator().getId().equals(user.getId());
-    }
-
-    private void skipRemainingSteps(ReviewWorkflow workflow) {
-        for (ReviewStep step : reviewStepRepository.findByWorkflowIdOrderByStepOrderAsc(workflow.getId())) {
-            if (step.getStatus() == StepStatus.PENDING) {
-                step.setStatus(StepStatus.SKIPPED);
-                reviewStepRepository.save(step);
-            }
-        }
     }
 
     private void logEvent(ReviewWorkflow workflow, User actor, WorkflowEventType type, String message) {
