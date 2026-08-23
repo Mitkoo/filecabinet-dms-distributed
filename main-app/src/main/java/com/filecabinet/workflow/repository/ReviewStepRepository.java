@@ -2,6 +2,7 @@ package com.filecabinet.workflow.repository;
 
 import com.filecabinet.workflow.model.ReviewStep;
 import com.filecabinet.workflow.model.StepStatus;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -15,6 +16,7 @@ import java.util.UUID;
 @Repository
 public interface ReviewStepRepository extends JpaRepository<ReviewStep, UUID> {
 
+    @EntityGraph(attributePaths = "reviewer")
     List<ReviewStep> findByWorkflowIdOrderByStepOrderAsc(UUID workflowId);
 
     List<ReviewStep> findByReviewerIdAndStatus(UUID reviewerId, StepStatus status);

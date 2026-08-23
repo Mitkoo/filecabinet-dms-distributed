@@ -8,15 +8,20 @@ import com.filecabinet.document.model.DocumentField;
 import com.filecabinet.document.model.DocumentStatus;
 import com.filecabinet.document.model.DocumentType;
 import com.filecabinet.document.repository.DocumentFieldRepository;
+import com.filecabinet.document.repository.DocumentListView;
 import com.filecabinet.document.repository.DocumentRepository;
 import com.filecabinet.user.model.User;
 import com.filecabinet.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -54,9 +59,36 @@ public class DocumentService {
         return documentRepository.findByOwnerId(ownerId);
     }
 
+    @Transactional(readOnly = true)
+    public Page<DocumentListView> list(UUID ownerId, boolean all, Pageable pageable) {
+        return all
+                ? documentRepository.findAllAsList(pageable)
+                : documentRepository.findListByOwnerId(ownerId, pageable);
+    }
+
     public Document findById(UUID id) {
         return documentRepository.findById(id)
                 .orElseThrow(() -> new ServiceExceptions.NotFoundException("Document not found: " + id));
+    }
+
+    @Transactional(readOnly = true)
+    public Document findDetailById(UUID id) {
+        return documentRepository.findWithOwnerAndCategoryById(id)
+                .orElseThrow(() -> new ServiceExceptions.NotFoundException("Document not found: " + id));
+    }
+
+    @Transactional
+    @PreAuthorize("hasAnyRole('ADMIN', 'ACCOUNTANT')")
+    public Document markPaid(UUID id) {
+        Document document = findById(id);
+        if (document.getDocumentType() != DocumentType.INVOICE) {
+            throw new ServiceExceptions.InvalidStateException("Only invoices can be marked as paid.");
+        }
+        if (document.getStatus() != DocumentStatus.APPROVED) {
+            throw new ServiceExceptions.InvalidStateException("Only approved documents can be marked as paid.");
+        }
+        document.setStatus(DocumentStatus.PAID);
+        return documentRepository.save(document);
     }
 
     public Document update(UUID id, String title, DocumentType documentType, String filePath, UUID categoryId) {
@@ -90,6 +122,7 @@ public class DocumentService {
         return documentFieldRepository.findByDocumentIdOrderByFieldName(documentId);
     }
 
+    @Transactional
     public DocumentField addField(UUID documentId, String fieldName, String fieldValue) {
         Document document = findById(documentId);
 
@@ -105,6 +138,22 @@ public class DocumentService {
             documentRepository.save(document);
         }
         return saved;
+    }
+
+    @Transactional
+    public Document applyReviewedFields(UUID documentId, Map<String, String> fields) {
+        documentFieldRepository.deleteByDocumentId(documentId);
+        Document document = findById(documentId);
+        fields.forEach((name, value) -> documentFieldRepository.save(DocumentField.builder()
+                .document(document)
+                .fieldName(name)
+                .fieldValue(value)
+                .build()));
+        if (document.getStatus() == DocumentStatus.UPLOADED) {
+            document.setStatus(DocumentStatus.STRUCTURED);
+            documentRepository.save(document);
+        }
+        return document;
     }
 
     public void removeField(UUID documentId, UUID fieldId) {

@@ -4,22 +4,44 @@ import com.filecabinet.shared.exception.ServiceExceptions;
 import com.filecabinet.user.model.Role;
 import com.filecabinet.user.model.User;
 import com.filecabinet.user.repository.UserRepository;
+import com.filecabinet.user.repository.UserSummaryView;
+import com.filecabinet.web.rest.dto.ReviewerOption;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @Transactional(readOnly = true)
+    public List<UserSummaryView> findAllSummaries() {
+        return userRepository.findAllSummaries();
+    }
+
+    @Cacheable("reviewers")
+    @Transactional(readOnly = true)
+    public List<ReviewerOption> getReviewerOptions() {
+        return userRepository.findAllSummaries().stream()
+                .map(view -> new ReviewerOption(view.getId(), view.getUsername(), view.getRole().name()))
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+    }
+
+    @CacheEvict(value = "reviewers", allEntries = true)
     public User register(String username, String email, String rawPassword) {
         if (userRepository.existsByUsername(username)) {
             throw new ServiceExceptions.DuplicateException("Username already taken: " + username);
@@ -66,6 +88,8 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    @CacheEvict(value = "reviewers", allEntries = true)
+    @PreAuthorize("hasRole('ADMIN')")
     public User updateRole(UUID id, Role role) {
         User user = findById(id);
         user.setRole(role);
@@ -78,12 +102,5 @@ public class UserService {
                 .orElseThrow(() -> new ServiceExceptions.InvalidStateException("No account matches that username and email."));
         user.setPasswordHash(passwordEncoder.encode(newRawPassword));
         userRepository.save(user);
-    }
-
-    public void delete(UUID id) {
-        if (!userRepository.existsById(id)) {
-            throw new ServiceExceptions.NotFoundException("User not found: " + id);
-        }
-        userRepository.deleteById(id);
     }
 }

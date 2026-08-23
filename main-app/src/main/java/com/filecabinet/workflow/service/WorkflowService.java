@@ -18,6 +18,7 @@ import com.filecabinet.workflow.model.WorkflowStatus;
 import com.filecabinet.workflow.repository.ReviewStepRepository;
 import com.filecabinet.workflow.repository.ReviewWorkflowRepository;
 import com.filecabinet.workflow.repository.WorkflowEventRepository;
+import com.filecabinet.workflow.repository.WorkflowInboxView;
 import com.filecabinet.workflow.repository.WorkflowReadRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -198,6 +199,17 @@ public class WorkflowService {
     public ReviewWorkflow findById(UUID id) {
         return reviewWorkflowRepository.findById(id)
                 .orElseThrow(() -> new ServiceExceptions.NotFoundException("Review workflow not found: " + id));
+    }
+
+    @Transactional(readOnly = true)
+    public ReviewWorkflow findDetailById(UUID id) {
+        return reviewWorkflowRepository.findDetailById(id)
+                .orElseThrow(() -> new ServiceExceptions.NotFoundException("Review workflow not found: " + id));
+    }
+
+    @Transactional(readOnly = true)
+    public List<WorkflowInboxView> findInbox(UUID userId) {
+        return reviewWorkflowRepository.findInboxForUser(userId);
     }
 
     public Optional<ReviewWorkflow> findLatestForDocument(UUID documentId) {

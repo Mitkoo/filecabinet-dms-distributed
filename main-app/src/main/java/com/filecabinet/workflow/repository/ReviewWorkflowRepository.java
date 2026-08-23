@@ -3,6 +3,7 @@ package com.filecabinet.workflow.repository;
 import com.filecabinet.workflow.model.ReviewWorkflow;
 import com.filecabinet.workflow.model.StepStatus;
 import com.filecabinet.workflow.model.WorkflowStatus;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,6 +17,9 @@ import java.util.UUID;
 public interface ReviewWorkflowRepository extends JpaRepository<ReviewWorkflow, UUID> {
 
     Optional<ReviewWorkflow> findFirstByDocumentIdOrderByCreatedOnDesc(UUID documentId);
+
+    @EntityGraph(attributePaths = {"initiator", "document"})
+    Optional<ReviewWorkflow> findDetailById(UUID id);
 
     @Query("""
             SELECT COUNT(s)
@@ -50,6 +54,21 @@ public interface ReviewWorkflowRepository extends JpaRepository<ReviewWorkflow, 
                               WHERE s.workflow = w AND s.reviewer.id = :userId))
             """)
     boolean hasInvolvement(@Param("documentId") UUID documentId, @Param("userId") UUID userId);
+
+    @Query("""
+            SELECT w.id AS id,
+                   w.document.id AS documentId,
+                   w.document.title AS documentTitle,
+                   w.initiator.username AS initiatorUsername,
+                   w.status AS status,
+                   w.createdOn AS createdOn
+            FROM ReviewWorkflow w
+            WHERE w.initiator.id = :userId
+               OR EXISTS (SELECT 1 FROM ReviewStep s
+                          WHERE s.workflow = w AND s.reviewer.id = :userId)
+            ORDER BY w.createdOn DESC
+            """)
+    List<WorkflowInboxView> findInboxForUser(@Param("userId") UUID userId);
 
     default long countActionableForUser(UUID userId) {
         return countActionable(userId, StepStatus.PENDING, WorkflowStatus.IN_PROGRESS);

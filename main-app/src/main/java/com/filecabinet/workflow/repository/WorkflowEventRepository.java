@@ -2,6 +2,7 @@ package com.filecabinet.workflow.repository;
 
 import com.filecabinet.workflow.model.WorkflowEvent;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,6 +14,7 @@ import java.util.UUID;
 @Repository
 public interface WorkflowEventRepository extends JpaRepository<WorkflowEvent, UUID> {
 
+    @EntityGraph(attributePaths = "actor")
     List<WorkflowEvent> findByWorkflowIdOrderByCreatedOnAsc(UUID workflowId);
 
     @Query("""

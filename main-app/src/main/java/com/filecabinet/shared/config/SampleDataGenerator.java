@@ -13,7 +13,9 @@ import com.filecabinet.user.service.UserService;
 import com.filecabinet.workflow.model.ReviewWorkflow;
 import com.filecabinet.workflow.service.WorkflowService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
@@ -27,6 +29,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Component
+@Profile("dev")
 @RequiredArgsConstructor
 public class SampleDataGenerator implements CommandLineRunner {
 
@@ -36,25 +39,32 @@ public class SampleDataGenerator implements CommandLineRunner {
     private final DocumentService documentService;
     private final WorkflowService workflowService;
 
+    @Value("${filecabinet.seed-password:password123}")
+    private String seedPassword;
+
     @Override
     public void run(String... args) {
         User admin = userRepository.findByUsername("jane.doe").orElseGet(() -> {
-            User created = userService.register("jane.doe", "jane.doe@company.com", "password123");
+            User created = userService.register("jane.doe", "jane.doe@company.com", seedPassword);
             created.setRole(Role.ADMIN);
             return userRepository.save(created);
         });
 
         User clerk = userRepository.findByUsername("mike.chen")
-                .orElseGet(() -> userService.register("mike.chen", "mike.chen@company.com", "password123"));
+                .orElseGet(() -> userService.register("mike.chen", "mike.chen@company.com", seedPassword));
 
         User dimi = userRepository.findByUsername("dimi").orElseGet(() -> {
-            User created = userService.register("dimi", "dimi@company.com", "pass123");
+            User created = userService.register("dimi", "dimi@company.com", seedPassword);
             created.setRole(Role.ADMIN);
             return userRepository.save(created);
         });
 
+        seedRoleUser("buyer", "buyer@company.com", Role.BUYER);
+        seedRoleUser("manager", "manager@company.com", Role.MANAGER);
+        seedRoleUser("accountant", "accountant@company.com", Role.ACCOUNTANT);
+
         User demo = userRepository.findByUsername("demo").orElseGet(() -> {
-            User created = userService.register("demo", "demo@filecabinet.local", "demo1234");
+            User created = userService.register("demo", "demo@filecabinet.local", seedPassword);
             created.setRole(Role.DEMO);
             return userRepository.save(created);
         });
@@ -106,6 +116,14 @@ public class SampleDataGenerator implements CommandLineRunner {
             documentService.addField(inspection.getId(), "Inspector", "Northside Safety Co.");
             documentService.updateStatus(inspection.getId(), DocumentStatus.REJECTED);
         }
+    }
+
+    private User seedRoleUser(String username, String email, Role role) {
+        return userRepository.findByUsername(username).orElseGet(() -> {
+            User created = userService.register(username, email, seedPassword);
+            created.setRole(role);
+            return userRepository.save(created);
+        });
     }
 
     private Document seedDocument(String title, DocumentType type, Category category, User owner) {
