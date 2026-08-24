@@ -1,11 +1,12 @@
 import { cn } from '@/lib/utils'
 
-type Tone = 'success' | 'warning' | 'primary' | 'destructive' | 'muted'
+type Tone = 'success' | 'warning' | 'primary' | 'violet' | 'destructive' | 'muted'
 
 const toneStyles: Record<Tone, string> = {
   success: 'bg-success/12 text-success ring-success/30',
   warning: 'bg-warning/15 text-warning-foreground ring-warning/30',
   primary: 'bg-primary/10 text-primary ring-primary/25',
+  violet: 'bg-violet-500/12 text-violet-700 ring-violet-500/30 dark:text-violet-300',
   destructive: 'bg-destructive/12 text-destructive ring-destructive/30',
   muted: 'bg-muted text-muted-foreground ring-border',
 }
@@ -20,7 +21,7 @@ const statusTone: Record<string, Tone> = {
   PENDING: 'warning',
   APPROVED: 'success',
   COMPLETED: 'success',
-  PAID: 'success',
+  PAID: 'violet',
   REJECTED: 'destructive',
   FAILED: 'destructive',
   CANCELLED: 'muted',
