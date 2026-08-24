@@ -54,4 +54,10 @@ public class ExtractionJob {
     private LocalDateTime requestedOn;
 
     private LocalDateTime completedOn;
+
+    @Column(nullable = false)
+    private boolean needsReview;
+
+    @Column(length = 2000)
+    private String reviewNotes;
 }

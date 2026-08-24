@@ -40,7 +40,7 @@ class ExtractionControllerTest {
 
     private ExtractionJobResponse sampleResponse(String status) {
         return new ExtractionJobResponse(UUID.randomUUID(), UUID.randomUUID(), "mistral",
-                status, 0, LocalDateTime.now(), null, List.of(), List.of());
+                status, 0, LocalDateTime.now(), null, false, List.of(), List.of(), List.of());
     }
 
     @Test

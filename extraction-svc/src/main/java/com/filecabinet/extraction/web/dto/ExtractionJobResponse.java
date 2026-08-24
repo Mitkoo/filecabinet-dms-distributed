@@ -12,6 +12,8 @@ public record ExtractionJobResponse(
         int attempts,
         LocalDateTime requestedOn,
         LocalDateTime completedOn,
+        boolean needsReview,
+        List<String> reviewNotes,
         List<ExtractedFieldResponse> fields,
         List<LineItemResponse> lineItems) {
 }

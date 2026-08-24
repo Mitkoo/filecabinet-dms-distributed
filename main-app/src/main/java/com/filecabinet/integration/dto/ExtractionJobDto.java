@@ -12,6 +12,8 @@ public record ExtractionJobDto(
         int attempts,
         LocalDateTime requestedOn,
         LocalDateTime completedOn,
+        boolean needsReview,
+        List<String> reviewNotes,
         List<ExtractionFieldDto> fields,
         List<LineItemDto> lineItems) {
 }

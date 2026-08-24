@@ -41,6 +41,7 @@ public class ExtractionJobService {
     private final ExtractedFieldRepository fieldRepository;
     private final ExtractedLineItemRepository lineItemRepository;
     private final ExtractorPort extractor;
+    private final InvoiceSanityChecker sanityChecker;
 
     @Transactional
     public ExtractionJobResponse queue(CreateExtractionRequest request) {
@@ -145,11 +146,14 @@ public class ExtractionJobService {
                 lineItemRepository.save(builder.build());
             }
 
+            List<String> warnings = sanityChecker.check(result.fields(), result.lineItems());
+            job.setNeedsReview(!warnings.isEmpty());
+            job.setReviewNotes(warnings.isEmpty() ? null : String.join("\n", warnings));
             job.setStatus(ExtractionStatus.COMPLETED);
             job.setCompletedOn(LocalDateTime.now());
             jobRepository.save(job);
-            log.info("Completed extraction job {} with {} fields and {} line items",
-                    jobId, result.fields().size(), result.lineItems().size());
+            log.info("Completed extraction job {} with {} fields, {} line items, {} review flag(s)",
+                    jobId, result.fields().size(), result.lineItems().size(), warnings.size());
         } catch (RuntimeException ex) {
             job.setStatus(ExtractionStatus.FAILED);
             jobRepository.save(job);
@@ -211,6 +215,9 @@ public class ExtractionJobService {
     private ExtractionJobResponse toResponse(ExtractionJob job, List<ExtractedField> fields, List<ExtractedLineItem> lineItems) {
         List<ExtractedFieldResponse> fieldResponses = fields.stream().map(this::toFieldResponse).toList();
         List<LineItemResponse> lineItemResponses = lineItems.stream().map(this::toLineItemResponse).toList();
+        List<String> reviewNotes = (job.getReviewNotes() == null || job.getReviewNotes().isBlank())
+                ? List.of()
+                : List.of(job.getReviewNotes().split("\n"));
         return new ExtractionJobResponse(
                 job.getId(),
                 job.getDocumentId(),
@@ -219,6 +226,8 @@ public class ExtractionJobService {
                 job.getAttempts(),
                 job.getRequestedOn(),
                 job.getCompletedOn(),
+                job.isNeedsReview(),
+                reviewNotes,
                 fieldResponses,
                 lineItemResponses);
     }
