@@ -78,6 +78,8 @@ public class WorkflowRestController {
                 workflow.getId(),
                 workflow.getDocument().getId(),
                 workflow.getDocument().getTitle(),
+                workflow.getDocument().getDocumentType().name(),
+                workflow.getDocument().getStatus().name(),
                 workflow.getStatus().name(),
                 workflow.getInitiator().getUsername(),
                 workflow.getMessage(),

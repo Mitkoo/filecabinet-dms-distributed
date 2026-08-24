@@ -8,6 +8,8 @@ public record WorkflowResponse(
         UUID id,
         UUID documentId,
         String documentTitle,
+        String documentType,
+        String documentStatus,
         String status,
         String initiatorUsername,
         String message,
