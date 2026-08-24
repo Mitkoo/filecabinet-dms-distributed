@@ -66,15 +66,11 @@ public class SampleDataGenerator implements CommandLineRunner {
         User clerk = userRepository.findByUsername("mike.chen")
                 .orElseGet(() -> userService.register("mike.chen", "mike.chen@company.com", seedPassword));
 
-        User dimi = userRepository.findByUsername("dimi").orElseGet(() -> {
-            User created = userService.register("dimi", "dimi@company.com", seedPassword);
-            created.setRole(Role.ADMIN);
-            return userRepository.save(created);
-        });
+        seedRoleUser("dimi", "dimi@company.com", Role.ADMIN);
 
-        seedRoleUser("buyer", "buyer@company.com", Role.BUYER);
-        seedRoleUser("manager", "manager@company.com", Role.MANAGER);
-        seedRoleUser("accountant", "accountant@company.com", Role.ACCOUNTANT);
+        User buyer = seedRoleUser("buyer", "buyer@company.com", Role.BUYER);
+        User manager = seedRoleUser("manager", "manager@company.com", Role.MANAGER);
+        User accountant = seedRoleUser("accountant", "accountant@company.com", Role.ACCOUNTANT);
 
         User demo = userRepository.findByUsername("demo").orElseGet(() -> {
             User created = userService.register("demo", "demo@filecabinet.local", seedPassword);
@@ -106,10 +102,15 @@ public class SampleDataGenerator implements CommandLineRunner {
             documentService.addField(invoice.getId(), "Due Date", "2026-08-15");
             documentService.updateStatus(invoice.getId(), DocumentStatus.APPROVED);
 
-            seedDocument("Lease Agreement — Downtown Office", DocumentType.CONTRACT, categories.get(1), clerk);
-            seedDocument("Consulting Agreement — Nova LLC", DocumentType.CONTRACT, categories.get(2), admin);
-            seedDocument("Receipt — Office Supplies", DocumentType.RECEIPT, categories.get(3), clerk);
-            seedDocument("Employment Contract — J. Smith", DocumentType.CONTRACT, categories.get(1), admin);
+            Document supplies = seedInvoiceDocument("Office Supplies Invoice — Brown & Co", categories.get(3), clerk,
+                    "invoice_Trudy Brown_15209.pdf");
+            documentService.addField(supplies.getId(), "Vendor", "Brown & Co");
+            documentService.addField(supplies.getId(), "Amount Due", "512.40 USD");
+
+            Document consulting = seedInvoiceDocument("Consulting Invoice — Blackwell LLC", categories.get(2), admin,
+                    "invoice_Troy Blackwell_18864.pdf");
+            documentService.addField(consulting.getId(), "Vendor", "Blackwell LLC");
+            documentService.addField(consulting.getId(), "Amount Due", "3,120.00 USD");
         }
 
         if (documentService.findByOwner(demo.getId()).isEmpty()) {
@@ -118,16 +119,19 @@ public class SampleDataGenerator implements CommandLineRunner {
             documentService.addField(itPurchase.getId(), "Vendor", "TechSupply Co");
             documentService.addField(itPurchase.getId(), "Amount Due", "1,899.00 USD");
 
-            Document maintenance = seedDocument("Server Maintenance Contract — CloudOps Inc", DocumentType.CONTRACT, categories.get(2), clerk);
+            Document maintenance = seedInvoiceDocument("Server Maintenance Invoice — CloudOps Inc", categories.get(2), clerk,
+                    "invoice_Troy Staebel_30584.pdf");
             documentService.addField(maintenance.getId(), "Vendor", "CloudOps Inc");
+            documentService.addField(maintenance.getId(), "Amount Due", "2,400.00 USD");
             ReviewWorkflow maintenanceWorkflow = workflowService.startWorkflow(maintenance.getId(), admin.getId(),
-                    List.of(demo.getId(), dimi.getId()), "Please review this maintenance contract before renewal.");
+                    List.of(buyer.getId(), manager.getId(), accountant.getId()), "Please review this maintenance invoice before payment.");
             workflowService.addComment(maintenanceWorkflow.getId(), admin.getId(),
-                    "Let me know if you need the vendor's latest SLA before you decide.");
+                    "Let me know if you need the vendor's latest SLA before you approve payment.");
 
-            Document inspection = seedDocument("Facility Inspection Report — Northside Warehouse", DocumentType.OTHER, categories.get(3), admin);
-            documentService.addField(inspection.getId(), "Inspector", "Northside Safety Co.");
-            documentService.updateStatus(inspection.getId(), DocumentStatus.REJECTED);
+            Document rejected = seedInvoiceDocument("Facility Services Invoice — Northside", categories.get(3), admin,
+                    "invoice_Tracy Hopkins_21272.pdf");
+            documentService.addField(rejected.getId(), "Vendor", "Northside Safety Co.");
+            documentService.updateStatus(rejected.getId(), DocumentStatus.REJECTED);
         }
     }
 
@@ -137,10 +141,6 @@ public class SampleDataGenerator implements CommandLineRunner {
             created.setRole(role);
             return userRepository.save(created);
         });
-    }
-
-    private Document seedDocument(String title, DocumentType type, Category category, User owner) {
-        return documentService.create(title, type, "sample-files/" + UUID.randomUUID() + ".pdf", owner.getId(), category.getId());
     }
 
     private Document seedInvoiceDocument(String title, Category category, User owner, String sampleFileName) {
