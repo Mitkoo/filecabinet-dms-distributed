@@ -1,0 +1,6 @@
+**/target
+**/node_modules
+react-files/dist
+.git
+.idea
+uploads
