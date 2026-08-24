@@ -23,6 +23,7 @@ import com.filecabinet.web.rest.dto.DocumentUpdateRequest;
 import com.filecabinet.web.rest.dto.FieldRequest;
 import com.filecabinet.web.rest.dto.FieldResponse;
 import com.filecabinet.web.rest.dto.PagedResponse;
+import com.filecabinet.web.rest.dto.StatusUpdateRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -133,6 +134,13 @@ public class DocumentRestController {
     public DocumentDetailResponse markPaid(@PathVariable UUID id) {
         documentService.markPaid(id);
         log.info("Document {} marked as paid", id);
+        return toDetailResponse(documentService.findDetailById(id), documentService.findFields(id));
+    }
+
+    @PutMapping("/{id}/status")
+    public DocumentDetailResponse changeStatus(@PathVariable UUID id, @Valid @RequestBody StatusUpdateRequest request) {
+        documentService.changeStatus(id, request.status());
+        log.info("Document {} status changed to {}", id, request.status());
         return toDetailResponse(documentService.findDetailById(id), documentService.findFields(id));
     }
 

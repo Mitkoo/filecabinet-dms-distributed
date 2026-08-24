@@ -1,3 +1,13 @@
+export const DOCUMENT_STATUSES = [
+  'UPLOADED',
+  'STRUCTURED',
+  'IN_REVIEW',
+  'APPROVED',
+  'REJECTED',
+  'PAID',
+  'ARCHIVED',
+] as const
+
 export interface AuthResponse {
   token: string
   username: string
@@ -69,6 +79,8 @@ export interface WorkflowDetail {
   id: string
   documentId: string
   documentTitle: string
+  documentType: string
+  documentStatus: string
   status: string
   initiatorUsername: string
   message: string | null
@@ -151,6 +163,8 @@ export interface ExtractionJob {
   attempts: number
   requestedOn: string
   completedOn: string | null
+  needsReview: boolean
+  reviewNotes: string[]
   fields: ExtractionField[]
   lineItems: LineItem[]
 }

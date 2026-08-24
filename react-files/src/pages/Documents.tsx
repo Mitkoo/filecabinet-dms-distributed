@@ -1,25 +1,37 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Upload } from 'lucide-react'
 import { api } from '@/lib/api'
 import type { DocumentListItem, Paged } from '@/lib/types'
+import { useAuth } from '@/auth/AuthContext'
 import { Button, buttonVariants } from '@/components/ui/Button'
 import { StatusBadge } from '@/components/ui/StatusBadge'
+import { StatusSelect, statusChoices } from '@/components/StatusSelect'
 import { cn } from '@/lib/utils'
 
 export function Documents() {
+  const { user } = useAuth()
   const [scope, setScope] = useState<'mine' | 'all'>('mine')
   const [page, setPage] = useState(0)
   const [data, setData] = useState<Paged<DocumentListItem> | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const load = useCallback(() => {
     setLoading(true)
     api
       .get<Paged<DocumentListItem>>(`/api/documents?scope=${scope}&page=${page}&size=25`)
       .then(setData)
       .finally(() => setLoading(false))
   }, [scope, page])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  async function changeStatus(docId: string, status: string) {
+    await api.put(`/api/documents/${docId}/status`, { status })
+    load()
+  }
 
   return (
     <div className="space-y-4">
@@ -89,7 +101,14 @@ export function Documents() {
                   </td>
                   <td className="px-4 py-2.5 text-muted-foreground">{doc.documentType}</td>
                   <td className="px-4 py-2.5">
-                    <StatusBadge status={doc.status} />
+                    {(() => {
+                      const options = statusChoices(user?.role, doc.status)
+                      return options.length > 1 ? (
+                        <StatusSelect value={doc.status} options={options} onChange={(s) => changeStatus(doc.id, s)} />
+                      ) : (
+                        <StatusBadge status={doc.status} />
+                      )
+                    })()}
                   </td>
                   <td className="px-4 py-2.5 text-muted-foreground">{doc.categoryName}</td>
                   <td className="px-4 py-2.5 text-muted-foreground">{doc.ownerUsername}</td>

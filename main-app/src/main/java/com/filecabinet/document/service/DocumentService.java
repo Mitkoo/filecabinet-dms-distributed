@@ -16,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -107,6 +109,40 @@ public class DocumentService {
         Document document = findById(id);
         document.setStatus(status);
         return documentRepository.save(document);
+    }
+
+    @Transactional
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'ACCOUNTANT')")
+    public Document changeStatus(UUID id, DocumentStatus status) {
+        Document document = findById(id);
+        ensureStatusChangeAllowed(document, status);
+        document.setStatus(status);
+        return documentRepository.save(document);
+    }
+
+    private void ensureStatusChangeAllowed(Document document, DocumentStatus target) {
+        if (hasRole("ADMIN")) {
+            return;
+        }
+        if (hasRole("MANAGER") && (target == DocumentStatus.REJECTED || target == DocumentStatus.STRUCTURED)) {
+            return;
+        }
+        if (hasRole("ACCOUNTANT") && target == DocumentStatus.PAID
+                && document.getDocumentType() == DocumentType.INVOICE
+                && document.getStatus() == DocumentStatus.APPROVED) {
+            return;
+        }
+        throw new ServiceExceptions.InvalidStateException("You are not allowed to set this document to " + target + ".");
+    }
+
+    private boolean hasRole(String role) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) {
+            return false;
+        }
+        String authority = "ROLE_" + role;
+        return authentication.getAuthorities().stream()
+                .anyMatch(granted -> granted.getAuthority().equals(authority));
     }
 
     @Transactional
