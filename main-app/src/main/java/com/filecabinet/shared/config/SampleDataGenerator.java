@@ -17,6 +17,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -44,6 +47,16 @@ public class SampleDataGenerator implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                "seed-admin", "n/a", List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))));
+        try {
+            seed();
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    private void seed() {
         User admin = userRepository.findByUsername("jane.doe").orElseGet(() -> {
             User created = userService.register("jane.doe", "jane.doe@company.com", seedPassword);
             created.setRole(Role.ADMIN);
