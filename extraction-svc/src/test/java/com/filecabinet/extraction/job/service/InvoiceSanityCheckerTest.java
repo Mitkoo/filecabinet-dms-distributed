@@ -50,6 +50,28 @@ class InvoiceSanityCheckerTest {
     }
 
     @Test
+    void discountAndChargesReconcileWithoutWarning() {
+        List<ExtractedFieldData> fields = List.of(
+                field("total_net", "6582.29"),
+                field("total_gross", "6582.29"),
+                field("total_discount", "1573.96"),
+                field("total_charges", "286.46"));
+        List<LineItemData> lines = List.of(line(7869.79));
+        assertThat(checker.check(fields, lines)).isEmpty();
+    }
+
+    @Test
+    void discountAndChargesThatStillDoNotReconcileAreFlagged() {
+        List<ExtractedFieldData> fields = List.of(
+                field("total_net", "5000.00"),
+                field("total_gross", "5000.00"),
+                field("total_discount", "1573.96"),
+                field("total_charges", "286.46"));
+        List<LineItemData> lines = List.of(line(7869.79));
+        assertThat(checker.check(fields, lines)).anyMatch(w -> w.contains("after discount and charges"));
+    }
+
+    @Test
     void netPlusTaxNotEqualGrossIsFlagged() {
         List<ExtractedFieldData> fields = List.of(
                 field("total_net", "100.00"),

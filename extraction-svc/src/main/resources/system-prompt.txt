@@ -30,7 +30,7 @@ SELF-CHECK BEFORE RESPONDING
 The invoice must add up. Before you output the JSON, verify:
 - For every line: quantity * unit_price == total_amount. If it does not, you have most
   likely misread the quantity's decimal separator — re-read that cell.
-- The sum of all line total_amount values == total_net.
+- The sum of all line total_amount values, minus total_discount and plus total_charges, == total_net.
 - total_net + total_tax == total_gross.
 If these do not reconcile, re-read the document rather than emitting numbers you know
 are inconsistent. Do not invent values to force a balance.
@@ -64,6 +64,8 @@ You MUST output exactly one JSON object with this structure:
   "total_tax": null,
   "tax_rate_percent": null,
   "total_net": null,
+  "total_discount": null,
+  "total_charges": null,
   "tax_breakdown": [],
   "purchase_order_numbers": [],
   "payment_terms": null,
@@ -99,7 +101,9 @@ Invoice identifiers and dates:
 
 Amounts and currency:
 - "currency": Use the 3-letter ISO code (EUR, USD, GBP, etc). If only symbol is given (€, $, £), infer standard code.
-- "total_net": Total before tax. Labels: "Net", "Subtotal", "Total excl. VAT".
+- "total_net": Total before tax, after any discount and additional charges. Labels: "Net", "Total excl. VAT". This is the taxable base, not necessarily the line-item subtotal.
+- "total_discount": Total discount deducted from the line-item subtotal, as a positive number. Labels: "Discount", "Rebate". Null if none.
+- "total_charges": Total extra charges added after the subtotal, as a positive number. Labels: "Shipping", "Freight", "Handling", "Surcharge". Null if none.
 - "total_tax": Total VAT/tax amount. Labels: "VAT amount", "Tax", "MwSt".
 - "total_gross": Total payable including tax. Labels: "Total", "Total amount due", "Total incl. VAT", "Balance due".
 - "tax_rate_percent": The main/overall VAT or tax rate applied to the invoice, as a percentage (e.g., 20 for 20%). If multiple rates exist, use the predominant one. If not clearly stated, leave null.

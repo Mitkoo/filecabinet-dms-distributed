@@ -153,6 +153,8 @@ public class MistralExtractor implements ExtractorPort {
         addScalar(fields, root, "total_net", locator);
         addScalar(fields, root, "total_tax", locator);
         addScalar(fields, root, "total_gross", locator);
+        addScalar(fields, root, "total_discount", locator);
+        addScalar(fields, root, "total_charges", locator);
         addScalar(fields, root, "tax_rate_percent", locator);
         addScalar(fields, root, "payment_terms", locator);
 

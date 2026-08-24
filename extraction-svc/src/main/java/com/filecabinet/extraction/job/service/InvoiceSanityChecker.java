@@ -38,13 +38,14 @@ public class InvoiceSanityChecker {
                     .filter(Objects::nonNull)
                     .mapToDouble(Double::doubleValue)
                     .sum();
+            Double discount = parse(values.get("total_discount"));
+            Double charges = parse(values.get("total_charges"));
+            double adjusted = sum - (discount != null ? discount : 0.0) + (charges != null ? charges : 0.0);
             double tolerance = ABS_TOLERANCE + PER_LINE_TOLERANCE * lineItems.size();
-            boolean matchesNet = net != null && Math.abs(sum - net) <= tolerance;
-            boolean matchesGross = gross != null && Math.abs(sum - gross) <= tolerance;
-            if (!matchesNet && !matchesGross) {
+            if (!matchesTotal(sum, net, gross, tolerance) && !matchesTotal(adjusted, net, gross, tolerance)) {
                 warnings.add(String.format(
-                        "Line items add up to %s, which does not match the invoice net (%s) or gross (%s).",
-                        money(sum), money(net), money(gross)));
+                        "Line items add up to %s%s, which does not match the invoice net (%s) or gross (%s).",
+                        money(sum), adjustmentNote(discount, charges, adjusted), money(net), money(gross)));
             }
         }
 
@@ -64,6 +65,18 @@ public class InvoiceSanityChecker {
         }
 
         return warnings;
+    }
+
+    private boolean matchesTotal(double candidate, Double net, Double gross, double tolerance) {
+        return (net != null && Math.abs(candidate - net) <= tolerance)
+                || (gross != null && Math.abs(candidate - gross) <= tolerance);
+    }
+
+    private String adjustmentNote(Double discount, Double charges, double adjusted) {
+        if (discount == null && charges == null) {
+            return "";
+        }
+        return String.format(" (%s after discount and charges)", money(adjusted));
     }
 
     private Double parse(String value) {
