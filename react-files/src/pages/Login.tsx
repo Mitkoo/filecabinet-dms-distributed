@@ -1,13 +1,13 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { FileStack } from 'lucide-react'
+import { FileStack, Play } from 'lucide-react'
 import { useAuth } from '@/auth/AuthContext'
 import { Button } from '@/components/ui/Button'
 import { Field, Input } from '@/components/ui/controls'
 import { ApiError } from '@/lib/api'
 
 export function Login() {
-  const { login } = useAuth()
+  const { login, demoLogin } = useAuth()
   const navigate = useNavigate()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -23,6 +23,19 @@ export function Login() {
       navigate('/documents')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Login failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function onDemo() {
+    setError(null)
+    setBusy(true)
+    try {
+      await demoLogin()
+      navigate('/documents')
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not start the demo')
     } finally {
       setBusy(false)
     }
@@ -49,6 +62,21 @@ export function Login() {
           <Button type="submit" className="w-full" disabled={busy}>
             {busy ? 'Signing in…' : 'Sign in'}
           </Button>
+
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="h-px flex-1 bg-border" />
+            or
+            <span className="h-px flex-1 bg-border" />
+          </div>
+
+          <Button type="button" variant="outline" className="w-full" onClick={onDemo} disabled={busy}>
+            <Play className="size-4" />
+            Explore the demo
+          </Button>
+          <p className="text-center text-xs text-muted-foreground">
+            Browse the app with sample documents — no account needed.
+          </p>
+
           <p className="text-center text-sm text-muted-foreground">
             No account?{' '}
             <Link to="/register" className="font-medium text-primary hover:underline">

@@ -65,6 +65,17 @@ public class UserService {
                 .filter(user -> passwordEncoder.matches(rawPassword, user.getPasswordHash()));
     }
 
+    @CacheEvict(value = "reviewers", allEntries = true)
+    public User getOrCreateDemo() {
+        return userRepository.findByUsername("demo").orElseGet(() -> userRepository.save(User.builder()
+                .username("demo")
+                .email("demo@filecabinet.local")
+                .passwordHash(passwordEncoder.encode(UUID.randomUUID().toString()))
+                .role(Role.DEMO)
+                .createdOn(LocalDateTime.now())
+                .build()));
+    }
+
     public List<User> findAll() {
         return userRepository.findAll();
     }

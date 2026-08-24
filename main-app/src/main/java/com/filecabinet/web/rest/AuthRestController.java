@@ -2,6 +2,7 @@ package com.filecabinet.web.rest;
 
 import com.filecabinet.shared.security.AppUserDetails;
 import com.filecabinet.shared.security.JwtService;
+import com.filecabinet.user.model.User;
 import com.filecabinet.user.service.UserService;
 import com.filecabinet.web.rest.dto.AuthResponse;
 import com.filecabinet.web.rest.dto.LoginRequest;
@@ -36,6 +37,15 @@ public class AuthRestController {
         AppUserDetails user = (AppUserDetails) authentication.getPrincipal();
         log.info("User {} logged in", user.getUsername());
         return new AuthResponse(jwtService.generateToken(user), user.getUsername(), user.getRole().name());
+    }
+
+    @PostMapping("/demo")
+    public AuthResponse demo() {
+        User demoUser = userService.getOrCreateDemo();
+        AppUserDetails principal = new AppUserDetails(demoUser.getId(), demoUser.getUsername(),
+                demoUser.getPasswordHash(), demoUser.getRole());
+        log.info("Demo session started for {}", principal.getUsername());
+        return new AuthResponse(jwtService.generateToken(principal), principal.getUsername(), principal.getRole().name());
     }
 
     @PostMapping("/register")

@@ -12,6 +12,7 @@ interface AuthContextValue {
   isAuthenticated: boolean
   isAdmin: boolean
   login: (username: string, password: string) => Promise<void>
+  demoLogin: () => Promise<void>
   register: (username: string, email: string, password: string) => Promise<void>
   logout: () => void
 }
@@ -50,6 +51,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin: user?.role === 'ADMIN',
       login: async (username, password) => {
         apply(await api.post<AuthResponse>('/api/auth/login', { username, password }))
+      },
+      demoLogin: async () => {
+        apply(await api.post<AuthResponse>('/api/auth/demo'))
       },
       register: async (username, email, password) => {
         apply(await api.post<AuthResponse>('/api/auth/register', { username, email, password }))
