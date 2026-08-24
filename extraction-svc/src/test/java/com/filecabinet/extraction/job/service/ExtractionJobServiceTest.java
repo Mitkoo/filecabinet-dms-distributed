@@ -51,6 +51,8 @@ class ExtractionJobServiceTest {
     private ExtractedLineItemRepository lineItemRepository;
     @Mock
     private ExtractorPort extractor;
+    @Mock
+    private InvoiceSanityChecker sanityChecker;
 
     @InjectMocks
     private ExtractionJobService service;
