@@ -62,7 +62,7 @@ class MistralExtractorTest {
                 {
                   "supplier": {"legal_name": "ACME CORP", "vat_number": "BG123456789", "country": "Testland", "city": "Metropolis"},
                   "invoice_number": "INV-1001",
-                  "invoice_date": "2026-03-26",
+                  "invoice_date": "2026-01-15",
                   "currency": "EUR",
                   "total_net": 1000.00,
                   "total_tax": 234.56,

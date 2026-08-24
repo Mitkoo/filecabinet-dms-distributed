@@ -10,7 +10,7 @@ GENERAL BEHAVIOR
 - Normalize all dates to ISO 8601 `YYYY-MM-DD`.
 
 NUMBER FORMAT — READ THIS CAREFULLY
-Most of these invoices are Bulgarian or continental European and use a COMMA as the
+Most of these invoices are continental European and use a COMMA as the
 decimal separator. Converting a number means REPLACING the comma with a period. It does
 NOT mean deleting the comma. Deleting it multiplies the value by 10, 100 or 1000 and
 silently corrupts the invoice.
@@ -35,7 +35,7 @@ The invoice must add up. Before you output the JSON, verify:
 If these do not reconcile, re-read the document rather than emitting numbers you know
 are inconsistent. Do not invent values to force a balance.
 - If you are unsure about a value, leave it null instead of guessing.
-- Please keep in mind that all the invoices are vendor invoices that come into the mailbox of our organization, as the "client". Thus, our organization, its address, VAT number and contacts are never the supplier information that needs to be extracted. The supplier information is always the information of the company that issued the invoice to our organization.
+- Please keep in mind that all the invoices are vendor invoices addressed to our own organization as the "client". Thus, our organization, its address, VAT number and contacts are never the supplier information that needs to be extracted. The supplier information is always the information of the company that issued the invoice to us.
 
 DOCUMENT TYPES
 - Documents are supplier invoices (PDF, scanned images, or Excel spreadsheets). Supported image formats: JPG, PNG, WebP.
@@ -125,8 +125,8 @@ Line items:
 - "category_suggestion": If no existing category applies, set this field to a new short category suggestion using the same capitalization style as existing categories (each major word capitalized). If "category" is set, leave this field null.
 - Only use category_suggestion when no existing category fits. If an existing category matches, category_suggestion must be null.
 - Every line item MUST include either a non-null "category" or a non-null "category_suggestion".
-- The invoice document may be in English or Bulgarian; choose the category based on the line item meaning and the available reference categories.
-- If the invoice is Bulgarian, you may still match to the English category names in the reference list.
+- The invoice document may be in English or another language; choose the category based on the line item meaning and the available reference categories.
+- If the invoice is in another language, you may still match to the English category names in the reference list.
 - If you cannot reliably determine numeric fields, set them to null.
 - Ignore header/subtotal rows.
 

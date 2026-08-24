@@ -77,7 +77,7 @@ class PdfTextLocatorTest {
 
     @Test
     void doesNotMatchShortNumberInsideLongerNumber() throws Exception {
-        try (PDDocument document = documentWith("Invoice INV-1001")) {
+        try (PDDocument document = documentWith("Invoice 1000200030")) {
             assertThat(locate(document, "20")).isNull();
         }
     }
