@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { api } from '@/lib/api'
 import type { FieldBox, LineItem } from '@/lib/types'
-import { cn } from '@/lib/utils'
+import { cn, formatMoney } from '@/lib/utils'
 
 const NUMERIC = new Set<keyof LineItem>(['quantity', 'unitPrice', 'vatRatePercent', 'totalAmount', 'lineNumber'])
 const CELL =
@@ -19,6 +19,7 @@ export function LineItemsEditor({
   onRefresh: () => void
 }) {
   const [drafts, setDrafts] = useState<Record<string, Partial<LineItem>>>({})
+  const [focusedCell, setFocusedCell] = useState<string | null>(null)
 
   function value(item: LineItem, key: keyof LineItem): string {
     const draft = drafts[item.id]
@@ -32,6 +33,11 @@ export function LineItemsEditor({
   function edit(item: LineItem, key: keyof LineItem, raw: string) {
     const parsed = NUMERIC.has(key) ? (raw === '' ? null : Number(raw)) : raw
     setDrafts((prev) => ({ ...prev, [item.id]: { ...prev[item.id], [key]: parsed } }))
+  }
+
+  function moneyValue(item: LineItem, key: keyof LineItem): string {
+    const raw = value(item, key)
+    return focusedCell === `${item.id}:${key}` ? raw : formatMoney(raw)
   }
 
   async function save(item: LineItem) {
@@ -89,16 +95,20 @@ export function LineItemsEditor({
                   onChange={(e) => edit(item, 'quantity', e.target.value)} onBlur={() => save(item)} />
               </td>
               <td className="px-1 py-0.5">
-                <input className={cn(CELL, 'text-right tabular-nums')} value={value(item, 'unitPrice')}
-                  onChange={(e) => edit(item, 'unitPrice', e.target.value)} onBlur={() => save(item)} />
+                <input className={cn(CELL, 'text-right tabular-nums')} value={moneyValue(item, 'unitPrice')}
+                  onFocus={() => setFocusedCell(`${item.id}:unitPrice`)}
+                  onChange={(e) => edit(item, 'unitPrice', e.target.value)}
+                  onBlur={() => { setFocusedCell(null); save(item) }} />
               </td>
               <td className="px-1 py-0.5">
                 <input className={cn(CELL, 'text-right tabular-nums')} value={value(item, 'vatRatePercent')}
                   onChange={(e) => edit(item, 'vatRatePercent', e.target.value)} onBlur={() => save(item)} />
               </td>
               <td className="px-1 py-0.5">
-                <input className={cn(CELL, 'text-right font-medium tabular-nums')} value={value(item, 'totalAmount')}
-                  onChange={(e) => edit(item, 'totalAmount', e.target.value)} onBlur={() => save(item)} />
+                <input className={cn(CELL, 'text-right font-medium tabular-nums')} value={moneyValue(item, 'totalAmount')}
+                  onFocus={() => setFocusedCell(`${item.id}:totalAmount`)}
+                  onChange={(e) => edit(item, 'totalAmount', e.target.value)}
+                  onBlur={() => { setFocusedCell(null); save(item) }} />
               </td>
               <td className="px-1 py-0.5 min-w-[10rem]">
                 <input className={CELL} value={value(item, 'category')}

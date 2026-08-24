@@ -6,8 +6,9 @@ import { PdfPane } from './PdfPane'
 import { LineItemsEditor } from './LineItemsEditor'
 import { StatusBadge } from './ui/StatusBadge'
 import { Button } from './ui/Button'
+import { formatMoney } from '@/lib/utils'
 
-const HEADER_FIELDS: { name: string; label: string }[] = [
+const HEADER_FIELDS: { name: string; label: string; money?: boolean }[] = [
   { name: 'invoice_number', label: 'Invoice number' },
   { name: 'invoice_date', label: 'Invoice date' },
   { name: 'due_date', label: 'Due date' },
@@ -18,12 +19,12 @@ const HEADER_FIELDS: { name: string; label: string }[] = [
   { name: 'supplier_city', label: 'Supplier city' },
   { name: 'payment_terms', label: 'Payment terms' },
   { name: 'tax_rate_percent', label: 'Tax rate %' },
-  { name: 'subtotal', label: 'Subtotal' },
-  { name: 'total_discount', label: 'Discount' },
-  { name: 'total_charges', label: 'Shipping / charges' },
-  { name: 'total_net', label: 'Total net' },
-  { name: 'total_tax', label: 'Total tax' },
-  { name: 'total_gross', label: 'Total gross' },
+  { name: 'subtotal', label: 'Subtotal', money: true },
+  { name: 'total_discount', label: 'Discount', money: true },
+  { name: 'total_charges', label: 'Shipping / charges', money: true },
+  { name: 'total_net', label: 'Total net', money: true },
+  { name: 'total_tax', label: 'Total tax', money: true },
+  { name: 'total_gross', label: 'Total gross', money: true },
 ]
 
 export function ExtractionViewer({
@@ -47,6 +48,7 @@ export function ExtractionViewer({
   const [edits, setEdits] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [focusedField, setFocusedField] = useState<string | null>(null)
 
   const extractionByName = useMemo(() => {
     const map: Record<string, ExtractionJob['fields'][number]> = {}
@@ -147,8 +149,9 @@ export function ExtractionViewer({
             )}
           </div>
           <div className="min-h-0 flex-1 divide-y divide-border overflow-y-auto">
-            {HEADER_FIELDS.map(({ name, label }) => {
+            {HEADER_FIELDS.map(({ name, label, money }) => {
               const box = extractionByName[name]?.box ?? null
+              const displayValue = money && focusedField !== name ? formatMoney(value(name)) : value(name)
               return (
                 <div
                   key={name}
@@ -161,9 +164,11 @@ export function ExtractionViewer({
                     {box && <span className="text-[10px] font-medium text-primary">page {box.page}</span>}
                   </div>
                   <input
-                    value={value(name)}
+                    value={displayValue}
                     placeholder="—"
+                    onFocus={() => setFocusedField(name)}
                     onChange={(e) => setEdits((d) => ({ ...d, [name]: e.target.value }))}
+                    onBlur={() => setFocusedField(null)}
                     className="mt-0.5 w-full rounded-md border border-transparent bg-transparent px-1.5 py-1 text-sm font-medium tabular-nums transition-colors hover:border-input focus:border-ring focus:bg-background focus:outline-none focus:ring-2 focus:ring-ring/30"
                   />
                 </div>
