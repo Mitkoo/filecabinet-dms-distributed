@@ -63,6 +63,7 @@ You MUST output exactly one JSON object with this structure:
   "total_gross": null,
   "total_tax": null,
   "tax_rate_percent": null,
+  "subtotal": null,
   "total_net": null,
   "total_discount": null,
   "total_charges": null,
@@ -101,6 +102,7 @@ Invoice identifiers and dates:
 
 Amounts and currency:
 - "currency": Use the 3-letter ISO code (EUR, USD, GBP, etc). If only symbol is given (€, $, £), infer standard code.
+- "subtotal": Sum of the line-item amounts before any discount or additional charges. Labels: "Subtotal", "Total before discount".
 - "total_net": Total before tax, after any discount and additional charges. Labels: "Net", "Total excl. VAT". This is the taxable base, not necessarily the line-item subtotal.
 - "total_discount": Total discount deducted from the line-item subtotal, as a positive number. Labels: "Discount", "Rebate". Null if none.
 - "total_charges": Total extra charges added after the subtotal, as a positive number. Labels: "Shipping", "Freight", "Handling", "Surcharge". Null if none.
