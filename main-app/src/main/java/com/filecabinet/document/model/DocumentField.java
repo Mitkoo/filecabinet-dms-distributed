@@ -38,7 +38,7 @@ public class DocumentField {
     @Column(nullable = false, length = 100)
     private String fieldName;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false, length = 1000)
     private String fieldValue;
 
     private Double confidence;
