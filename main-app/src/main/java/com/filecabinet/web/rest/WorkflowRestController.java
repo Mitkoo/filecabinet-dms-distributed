@@ -1,6 +1,8 @@
 package com.filecabinet.web.rest;
 
+import com.filecabinet.shared.exception.ServiceExceptions.InvalidStateException;
 import com.filecabinet.shared.security.AppUserDetails;
+import com.filecabinet.user.model.Role;
 import com.filecabinet.user.service.UserService;
 import com.filecabinet.workflow.model.ReviewStep;
 import com.filecabinet.workflow.model.ReviewWorkflow;
@@ -59,18 +61,32 @@ public class WorkflowRestController {
                 request.documentId(), principal.getId(), request.reviewerIds(), request.message());
         log.info("User {} started workflow {} for document {}",
                 principal.getUsername(), workflow.getId(), request.documentId());
-        return detail(workflow.getId());
+        return toResponse(workflow.getId());
     }
 
     @GetMapping("/by-document/{documentId}")
     public ResponseEntity<WorkflowResponse> byDocument(@PathVariable UUID documentId) {
         return workflowService.findLatestForDocument(documentId)
-                .map(workflow -> ResponseEntity.ok(detail(workflow.getId())))
+                .map(workflow -> ResponseEntity.ok(toResponse(workflow.getId())))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/{id}")
-    public WorkflowResponse detail(@PathVariable UUID id) {
+    public WorkflowResponse detail(@AuthenticationPrincipal AppUserDetails principal, @PathVariable UUID id) {
+        ensureCanView(principal, id);
+        return toResponse(id);
+    }
+
+    private void ensureCanView(AppUserDetails principal, UUID id) {
+        if (principal.getRole() == Role.ADMIN) {
+            return;
+        }
+        if (!workflowService.isParticipant(workflowService.findById(id), principal.getId())) {
+            throw new InvalidStateException("You do not have access to this workflow.");
+        }
+    }
+
+    private WorkflowResponse toResponse(UUID id) {
         ReviewWorkflow workflow = workflowService.findDetailById(id);
         List<StepResponse> steps = workflowService.getSteps(id).stream().map(this::toStep).toList();
         List<EventResponse> events = workflowService.getEvents(id).stream().map(this::toEvent).toList();
@@ -97,7 +113,7 @@ public class WorkflowRestController {
         workflowService.decide(id, stepId, principal.getId(), request.approve(), request.comment());
         log.info("User {} decided step {} on workflow {} (approve={})",
                 principal.getUsername(), stepId, id, request.approve());
-        return detail(id);
+        return toResponse(id);
     }
 
     @PostMapping("/{id}/comments")
@@ -105,7 +121,7 @@ public class WorkflowRestController {
                                     @PathVariable UUID id,
                                     @Valid @RequestBody CommentRequest request) {
         workflowService.addComment(id, principal.getId(), request.message());
-        return detail(id);
+        return toResponse(id);
     }
 
     @PostMapping("/{id}/remind")
@@ -118,7 +134,7 @@ public class WorkflowRestController {
     public WorkflowResponse cancel(@AuthenticationPrincipal AppUserDetails principal, @PathVariable UUID id) {
         workflowService.cancel(id, principal.getId());
         log.info("User {} cancelled workflow {}", principal.getUsername(), id);
-        return detail(id);
+        return toResponse(id);
     }
 
     private WorkflowSummaryResponse toSummary(WorkflowInboxView view) {
