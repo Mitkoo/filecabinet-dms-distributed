@@ -105,6 +105,7 @@ public class ExtractionJobService {
         }
         job.setStatus(ExtractionStatus.PROCESSING);
         job.setAttempts(job.getAttempts() + 1);
+        job.setProcessingStartedOn(LocalDateTime.now());
         jobRepository.save(job);
 
         try {
@@ -193,7 +194,7 @@ public class ExtractionJobService {
 
     @Transactional
     public int resetStuckProcessing(LocalDateTime cutoff) {
-        List<ExtractionJob> stuck = jobRepository.findByStatusAndRequestedOnBefore(ExtractionStatus.PROCESSING, cutoff);
+        List<ExtractionJob> stuck = jobRepository.findByStatusAndProcessingStartedOnBefore(ExtractionStatus.PROCESSING, cutoff);
         for (ExtractionJob job : stuck) {
             job.setStatus(ExtractionStatus.QUEUED);
             jobRepository.save(job);

@@ -188,6 +188,21 @@ class ExtractionJobServiceTest {
     }
 
     @Test
+    void resetStuckProcessingRequeuesJobsPastTheCutoff() {
+        LocalDateTime cutoff = LocalDateTime.now().minusHours(1);
+        ExtractionJob stuck = queuedJob(UUID.randomUUID(), "C:/x.pdf");
+        stuck.setStatus(ExtractionStatus.PROCESSING);
+        when(jobRepository.findByStatusAndProcessingStartedOnBefore(ExtractionStatus.PROCESSING, cutoff))
+                .thenReturn(List.of(stuck));
+        when(jobRepository.save(any(ExtractionJob.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        int requeued = service.resetStuckProcessing(cutoff);
+
+        assertThat(requeued).isEqualTo(1);
+        assertThat(stuck.getStatus()).isEqualTo(ExtractionStatus.QUEUED);
+    }
+
+    @Test
     void updateFieldValueChangesTheStoredValue() {
         UUID docId = UUID.randomUUID();
         UUID fieldId = UUID.randomUUID();

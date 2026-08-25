@@ -53,6 +53,8 @@ public class ExtractionJob {
     @Column(nullable = false)
     private LocalDateTime requestedOn;
 
+    private LocalDateTime processingStartedOn;
+
     private LocalDateTime completedOn;
 
     @Column(nullable = false)

@@ -15,6 +15,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ExtractionScheduler {
 
+    private static final int RETENTION_DAYS = 180;
+    private static final int STUCK_PROCESSING_HOURS = 1;
+
     private final ExtractionJobService jobService;
 
     @Scheduled(fixedDelay = 10000)
@@ -32,7 +35,7 @@ public class ExtractionScheduler {
     @Scheduled(cron = "0 0 2 * * *")
     public void nightlyMaintenance() {
         LocalDateTime now = LocalDateTime.now();
-        jobService.purgeCompletedOlderThan(now.minusDays(30));
-        jobService.resetStuckProcessing(now.minusHours(1));
+        jobService.purgeCompletedOlderThan(now.minusDays(RETENTION_DAYS));
+        jobService.resetStuckProcessing(now.minusHours(STUCK_PROCESSING_HOURS));
     }
 }

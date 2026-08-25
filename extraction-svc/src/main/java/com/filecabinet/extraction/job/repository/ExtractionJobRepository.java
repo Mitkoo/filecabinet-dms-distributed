@@ -15,7 +15,7 @@ public interface ExtractionJobRepository extends JpaRepository<ExtractionJob, UU
 
     Optional<ExtractionJob> findFirstByDocumentIdOrderByRequestedOnDesc(UUID documentId);
 
-    List<ExtractionJob> findByStatusAndRequestedOnBefore(ExtractionStatus status, LocalDateTime cutoff);
+    List<ExtractionJob> findByStatusAndProcessingStartedOnBefore(ExtractionStatus status, LocalDateTime cutoff);
 
     List<ExtractionJob> findByStatusAndCompletedOnBefore(ExtractionStatus status, LocalDateTime cutoff);
 }
