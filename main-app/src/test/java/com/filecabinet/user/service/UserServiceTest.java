@@ -1,7 +1,6 @@
 package com.filecabinet.user.service;
 
 import com.filecabinet.shared.exception.ServiceExceptions.DuplicateException;
-import com.filecabinet.shared.exception.ServiceExceptions.InvalidStateException;
 import com.filecabinet.shared.exception.ServiceExceptions.NotFoundException;
 import com.filecabinet.user.model.Role;
 import com.filecabinet.user.model.User;
@@ -10,7 +9,6 @@ import com.filecabinet.user.repository.UserSummaryView;
 import com.filecabinet.web.rest.dto.ReviewerOption;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -172,29 +170,6 @@ class UserServiceTest {
         User updated = service.updateRole(jane.getId(), Role.ADMIN);
 
         assertThat(updated.getRole()).isEqualTo(Role.ADMIN);
-    }
-
-    @Test
-    void resetPasswordUpdatesHashWhenUsernameAndEmailMatch() {
-        User jane = user("jane", Role.CLERK);
-        when(userRepository.findByUsername("jane")).thenReturn(Optional.of(jane));
-        when(passwordEncoder.encode("fresh")).thenReturn("newhash");
-
-        service.resetPassword("jane", "jane@filecabinet.local", "fresh");
-
-        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(captor.capture());
-        assertThat(captor.getValue().getPasswordHash()).isEqualTo("newhash");
-    }
-
-    @Test
-    void resetPasswordRejectsMismatchedEmail() {
-        User jane = user("jane", Role.CLERK);
-        when(userRepository.findByUsername("jane")).thenReturn(Optional.of(jane));
-
-        assertThatThrownBy(() -> service.resetPassword("jane", "wrong@x.com", "fresh"))
-                .isInstanceOf(InvalidStateException.class);
-        verify(userRepository, never()).save(any(User.class));
     }
 
     @Test

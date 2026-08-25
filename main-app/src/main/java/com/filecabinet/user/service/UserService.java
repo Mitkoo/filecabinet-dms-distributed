@@ -106,12 +106,4 @@ public class UserService {
         user.setRole(role);
         return userRepository.save(user);
     }
-
-    public void resetPassword(String username, String email, String newRawPassword) {
-        User user = userRepository.findByUsername(username)
-                .filter(u -> u.getEmail().equalsIgnoreCase(email))
-                .orElseThrow(() -> new ServiceExceptions.InvalidStateException("No account matches that username and email."));
-        user.setPasswordHash(passwordEncoder.encode(newRawPassword));
-        userRepository.save(user);
-    }
 }

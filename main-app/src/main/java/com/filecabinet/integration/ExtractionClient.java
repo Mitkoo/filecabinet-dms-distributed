@@ -20,9 +20,6 @@ public interface ExtractionClient {
     @PostMapping("/api/extractions")
     ExtractionJobDto queue(@RequestBody QueueExtractionRequest request);
 
-    @PutMapping("/api/extractions/{id}/reprocess")
-    ExtractionJobDto reprocess(@PathVariable("id") UUID id);
-
     @DeleteMapping("/api/extractions/{id}")
     void delete(@PathVariable("id") UUID id);
 
