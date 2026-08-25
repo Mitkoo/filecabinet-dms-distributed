@@ -3,6 +3,7 @@ package com.filecabinet.web.rest;
 import com.filecabinet.shared.exception.ServiceExceptions.DuplicateException;
 import com.filecabinet.shared.exception.ServiceExceptions.InvalidStateException;
 import com.filecabinet.shared.exception.ServiceExceptions.NotFoundException;
+import feign.FeignException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -48,6 +49,14 @@ public class RestExceptionHandler {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<Map<String, Object>> handleUploadSize(MaxUploadSizeExceededException ex) {
         return build(HttpStatus.PAYLOAD_TOO_LARGE, "Uploaded file is too large");
+    }
+
+    @ExceptionHandler(FeignException.class)
+    public ResponseEntity<Map<String, Object>> handleFeign(FeignException ex) {
+        if (ex.status() == HttpStatus.NOT_FOUND.value()) {
+            return build(HttpStatus.NOT_FOUND, "No extraction data found for this document.");
+        }
+        return build(HttpStatus.BAD_GATEWAY, "The extraction service is currently unavailable.");
     }
 
     private ResponseEntity<Map<String, Object>> build(HttpStatus status, String message) {
