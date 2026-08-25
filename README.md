@@ -17,7 +17,7 @@ Landing page with app info.
 
 Overview dashboard with your documents and the organization documents, inbox with approval request.
 
-<img width="2490" height="656" alt="image" src="https://github.com/user-attachments/assets/45c95f21-f56d-4255-998d-fc5b18e0a516" />
+<img width="2483" height="1067" alt="image" src="https://github.com/user-attachments/assets/dd394101-f357-4cfa-9250-5eedaf60a387" />
 
 Upload invoices and the Mistral based OCR extraction service will fill in the header fields and line items. 
 
