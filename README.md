@@ -17,19 +17,27 @@ Landing page with app info.
 
 Overview dashboard with your documents and the organization documents, inbox with approval request.
 
+
 <img width="2483" height="1067" alt="image" src="https://github.com/user-attachments/assets/dd394101-f357-4cfa-9250-5eedaf60a387" />
+
 
 Upload invoices and the Mistral based OCR extraction service will fill in the header fields and line items. 
 
+
 <img width="2434" height="1266" alt="image" src="https://github.com/user-attachments/assets/b5a6b009-7df1-4637-9a15-973a7f6a720d" />
+
 
 If the service catches issues it will mark the document for Clerk's human review.
 
+
 <img width="2464" height="1261" alt="image" src="https://github.com/user-attachments/assets/ac3bcfe0-2768-4a98-87d3-7cbc079d0426" />
+
 
 Users can review as human in the loop the quality of the extraction amend fields and start an approval chain to the Buyer, Manager and Accountant to pay the invoice.
 
+
 <img width="2494" height="771" alt="image" src="https://github.com/user-attachments/assets/13887c39-0f94-4078-bcc0-16f17d08d0a4" />
+
 
 ## Architecture
 
