@@ -13,6 +13,10 @@ import com.filecabinet.shared.exception.ServiceExceptions.NotFoundException;
 import com.filecabinet.user.model.Role;
 import com.filecabinet.user.model.User;
 import com.filecabinet.user.repository.UserRepository;
+import com.filecabinet.workflow.model.ReviewWorkflow;
+import com.filecabinet.workflow.model.WorkflowStatus;
+import com.filecabinet.workflow.repository.ReviewStepRepository;
+import com.filecabinet.workflow.repository.ReviewWorkflowRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,6 +53,12 @@ class DocumentServiceTest {
     private CategoryRepository categoryRepository;
     @Mock
     private UserRepository userRepository;
+    @Mock
+    private ReviewWorkflowRepository reviewWorkflowRepository;
+    @Mock
+    private ReviewStepRepository reviewStepRepository;
+    @Mock
+    private FileStorageService fileStorageService;
 
     @InjectMocks
     private DocumentService service;
@@ -156,17 +166,31 @@ class DocumentServiceTest {
     @Test
     void deleteUnknownDocumentThrows() {
         UUID id = UUID.randomUUID();
-        when(documentRepository.existsById(id)).thenReturn(false);
+        when(documentRepository.findById(id)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.delete(id)).isInstanceOf(NotFoundException.class);
     }
 
     @Test
-    void deleteRemovesFieldsAndDocument() {
-        UUID id = UUID.randomUUID();
-        when(documentRepository.existsById(id)).thenReturn(true);
-        service.delete(id);
-        verify(documentFieldRepository).deleteByDocumentId(id);
-        verify(documentRepository).deleteById(id);
+    void deleteRemovesFieldsAndDocumentAndFile() {
+        Document doc = document(DocumentType.INVOICE, DocumentStatus.STRUCTURED);
+        when(documentRepository.findById(doc.getId())).thenReturn(Optional.of(doc));
+        when(reviewWorkflowRepository.existsByDocumentId(doc.getId())).thenReturn(false);
+
+        service.delete(doc.getId());
+
+        verify(documentFieldRepository).deleteByDocumentId(doc.getId());
+        verify(documentRepository).deleteById(doc.getId());
+        verify(fileStorageService).delete(doc.getFilePath());
+    }
+
+    @Test
+    void deleteDocumentWithWorkflowHistoryThrows() {
+        Document doc = document(DocumentType.INVOICE, DocumentStatus.APPROVED);
+        when(documentRepository.findById(doc.getId())).thenReturn(Optional.of(doc));
+        when(reviewWorkflowRepository.existsByDocumentId(doc.getId())).thenReturn(true);
+
+        assertThatThrownBy(() -> service.delete(doc.getId())).isInstanceOf(InvalidStateException.class);
+        verify(documentRepository, never()).deleteById(any());
     }
 
     @AfterEach
@@ -232,7 +256,7 @@ class DocumentServiceTest {
     @Test
     void changeStatusAsAdminAllowsAnyTarget() {
         authenticateAs("ADMIN");
-        Document doc = document(DocumentType.CONTRACT, DocumentStatus.IN_REVIEW);
+        Document doc = document(DocumentType.CONTRACT, DocumentStatus.STRUCTURED);
         when(documentRepository.findById(doc.getId())).thenReturn(Optional.of(doc));
         when(documentRepository.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -247,10 +271,38 @@ class DocumentServiceTest {
         Document doc = document(DocumentType.CONTRACT, DocumentStatus.IN_REVIEW);
         when(documentRepository.findById(doc.getId())).thenReturn(Optional.of(doc));
         when(documentRepository.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(reviewWorkflowRepository.findFirstByDocumentIdOrderByCreatedOnDesc(doc.getId())).thenReturn(Optional.empty());
 
         service.changeStatus(doc.getId(), DocumentStatus.REJECTED);
 
         assertThat(doc.getStatus()).isEqualTo(DocumentStatus.REJECTED);
+    }
+
+    @Test
+    void changeStatusFromPaidIsRejectedEvenForAdmin() {
+        authenticateAs("ADMIN");
+        Document doc = document(DocumentType.INVOICE, DocumentStatus.PAID);
+        when(documentRepository.findById(doc.getId())).thenReturn(Optional.of(doc));
+
+        assertThatThrownBy(() -> service.changeStatus(doc.getId(), DocumentStatus.STRUCTURED))
+                .isInstanceOf(InvalidStateException.class);
+        verify(documentRepository, never()).save(any(Document.class));
+    }
+
+    @Test
+    void changeStatusFromInReviewCancelsTheActiveWorkflow() {
+        authenticateAs("MANAGER");
+        Document doc = document(DocumentType.CONTRACT, DocumentStatus.IN_REVIEW);
+        ReviewWorkflow workflow = ReviewWorkflow.builder().id(UUID.randomUUID()).status(WorkflowStatus.IN_PROGRESS).build();
+        when(documentRepository.findById(doc.getId())).thenReturn(Optional.of(doc));
+        when(documentRepository.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(reviewWorkflowRepository.findFirstByDocumentIdOrderByCreatedOnDesc(doc.getId())).thenReturn(Optional.of(workflow));
+        when(reviewWorkflowRepository.save(any(ReviewWorkflow.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.changeStatus(doc.getId(), DocumentStatus.STRUCTURED);
+
+        assertThat(workflow.getStatus()).isEqualTo(WorkflowStatus.CANCELLED);
+        verify(reviewStepRepository).skipRemainingSteps(workflow.getId());
     }
 
     @Test

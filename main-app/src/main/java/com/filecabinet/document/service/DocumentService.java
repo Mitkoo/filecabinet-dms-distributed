@@ -12,6 +12,9 @@ import com.filecabinet.document.repository.DocumentListView;
 import com.filecabinet.document.repository.DocumentRepository;
 import com.filecabinet.user.model.User;
 import com.filecabinet.user.repository.UserRepository;
+import com.filecabinet.workflow.model.WorkflowStatus;
+import com.filecabinet.workflow.repository.ReviewStepRepository;
+import com.filecabinet.workflow.repository.ReviewWorkflowRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,6 +37,15 @@ public class DocumentService {
     private final DocumentFieldRepository documentFieldRepository;
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
+    private final ReviewWorkflowRepository reviewWorkflowRepository;
+    private final ReviewStepRepository reviewStepRepository;
+    private final FileStorageService fileStorageService;
+
+    public void ensureCategoryExists(UUID categoryId) {
+        if (!categoryRepository.existsById(categoryId)) {
+            throw new ServiceExceptions.NotFoundException("Category not found: " + categoryId);
+        }
+    }
 
     public Document create(String title, DocumentType documentType, String filePath, UUID ownerId, UUID categoryId) {
         User owner = userRepository.findById(ownerId)
@@ -116,11 +128,29 @@ public class DocumentService {
     public Document changeStatus(UUID id, DocumentStatus status) {
         Document document = findById(id);
         ensureStatusChangeAllowed(document, status);
+        if (document.getStatus() == DocumentStatus.IN_REVIEW) {
+            closeActiveWorkflow(id);
+        }
         document.setStatus(status);
         return documentRepository.save(document);
     }
 
+    private void closeActiveWorkflow(UUID documentId) {
+        reviewWorkflowRepository.findFirstByDocumentIdOrderByCreatedOnDesc(documentId)
+                .filter(workflow -> workflow.getStatus() == WorkflowStatus.IN_PROGRESS)
+                .ifPresent(workflow -> {
+                    workflow.setStatus(WorkflowStatus.CANCELLED);
+                    workflow.setCompletedOn(LocalDateTime.now());
+                    reviewWorkflowRepository.save(workflow);
+                    reviewStepRepository.skipRemainingSteps(workflow.getId());
+                });
+    }
+
     private void ensureStatusChangeAllowed(Document document, DocumentStatus target) {
+        DocumentStatus current = document.getStatus();
+        if (current == DocumentStatus.PAID) {
+            throw new ServiceExceptions.InvalidStateException("A paid document's status cannot be changed.");
+        }
         if (hasRole("ADMIN")) {
             return;
         }
@@ -129,10 +159,17 @@ public class DocumentService {
         }
         if (hasRole("ACCOUNTANT") && target == DocumentStatus.PAID
                 && document.getDocumentType() == DocumentType.INVOICE
-                && document.getStatus() == DocumentStatus.APPROVED) {
+                && current == DocumentStatus.APPROVED) {
             return;
         }
         throw new ServiceExceptions.InvalidStateException("You are not allowed to set this document to " + target + ".");
+    }
+
+    public void ensureOwnerOrAdmin(UUID documentId, UUID userId) {
+        Document document = findById(documentId);
+        if (!document.getOwner().getId().equals(userId) && !hasRole("ADMIN")) {
+            throw new ServiceExceptions.InvalidStateException("You do not have access to this document.");
+        }
     }
 
     private boolean hasRole(String role) {
@@ -147,11 +184,14 @@ public class DocumentService {
 
     @Transactional
     public void delete(UUID id) {
-        if (!documentRepository.existsById(id)) {
-            throw new ServiceExceptions.NotFoundException("Document not found: " + id);
+        Document document = findById(id);
+        if (reviewWorkflowRepository.existsByDocumentId(id)) {
+            throw new ServiceExceptions.InvalidStateException(
+                    "Documents that have been through review cannot be deleted.");
         }
         documentFieldRepository.deleteByDocumentId(id);
         documentRepository.deleteById(id);
+        fileStorageService.delete(document.getFilePath());
     }
 
     public List<DocumentField> findFields(UUID documentId) {

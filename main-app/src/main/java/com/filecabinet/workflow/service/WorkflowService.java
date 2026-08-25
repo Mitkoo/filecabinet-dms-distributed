@@ -51,6 +51,10 @@ public class WorkflowService {
         if (document.getStatus() != DocumentStatus.STRUCTURED) {
             throw new ServiceExceptions.InvalidStateException("Only structured documents can be sent for review.");
         }
+        if (reviewWorkflowRepository.findFirstByDocumentIdOrderByCreatedOnDesc(documentId)
+                .filter(w -> w.getStatus() == WorkflowStatus.IN_PROGRESS).isPresent()) {
+            throw new ServiceExceptions.InvalidStateException("This document already has an active review workflow.");
+        }
         if (reviewerIds == null || reviewerIds.isEmpty()) {
             throw new ServiceExceptions.InvalidStateException("Select at least one reviewer.");
         }

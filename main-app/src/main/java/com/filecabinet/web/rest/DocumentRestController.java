@@ -90,6 +90,7 @@ public class DocumentRestController {
                                          @RequestParam UUID categoryId,
                                          @RequestParam("file") MultipartFile file) {
         DocumentType type = parseType(documentType);
+        documentService.ensureCategoryExists(categoryId);
         String storedPath = fileStorageService.store(file);
         Document document = documentService.create(title, type, storedPath, principal.getId(), categoryId);
         log.info("User {} uploaded document {}", principal.getUsername(), document.getId());
@@ -102,7 +103,9 @@ public class DocumentRestController {
     }
 
     @PutMapping("/{id}")
-    public DocumentDetailResponse update(@PathVariable UUID id, @Valid @RequestBody DocumentUpdateRequest request) {
+    public DocumentDetailResponse update(@AuthenticationPrincipal AppUserDetails principal,
+                                         @PathVariable UUID id, @Valid @RequestBody DocumentUpdateRequest request) {
+        documentService.ensureOwnerOrAdmin(id, principal.getId());
         DocumentType type = parseType(request.documentType());
         Document existing = documentService.findById(id);
         documentService.update(id, request.title(), type, existing.getFilePath(), request.categoryId());
@@ -110,7 +113,8 @@ public class DocumentRestController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+    public ResponseEntity<Void> delete(@AuthenticationPrincipal AppUserDetails principal, @PathVariable UUID id) {
+        documentService.ensureOwnerOrAdmin(id, principal.getId());
         documentService.delete(id);
         deleteExtraction(id);
         log.info("Deleted document {}", id);
@@ -119,13 +123,17 @@ public class DocumentRestController {
 
     @PostMapping("/{id}/fields")
     @ResponseStatus(HttpStatus.CREATED)
-    public FieldResponse addField(@PathVariable UUID id, @Valid @RequestBody FieldRequest request) {
+    public FieldResponse addField(@AuthenticationPrincipal AppUserDetails principal,
+                                  @PathVariable UUID id, @Valid @RequestBody FieldRequest request) {
+        documentService.ensureOwnerOrAdmin(id, principal.getId());
         DocumentField field = documentService.addField(id, request.fieldName(), request.fieldValue());
         return toFieldResponse(field);
     }
 
     @DeleteMapping("/{id}/fields/{fieldId}")
-    public ResponseEntity<Void> removeField(@PathVariable UUID id, @PathVariable UUID fieldId) {
+    public ResponseEntity<Void> removeField(@AuthenticationPrincipal AppUserDetails principal,
+                                            @PathVariable UUID id, @PathVariable UUID fieldId) {
+        documentService.ensureOwnerOrAdmin(id, principal.getId());
         documentService.removeField(id, fieldId);
         return ResponseEntity.noContent().build();
     }
@@ -155,7 +163,8 @@ public class DocumentRestController {
     }
 
     @PostMapping("/{id}/extract")
-    public ExtractionJobDto extract(@PathVariable UUID id) {
+    public ExtractionJobDto extract(@AuthenticationPrincipal AppUserDetails principal, @PathVariable UUID id) {
+        documentService.ensureOwnerOrAdmin(id, principal.getId());
         Document document = documentService.findById(id);
         return extractionClient.queue(new QueueExtractionRequest(id, document.getFilePath()));
     }
@@ -166,22 +175,27 @@ public class DocumentRestController {
     }
 
     @PutMapping("/{id}/extraction/fields/{fieldId}")
-    public ExtractionJobDto updateExtractionField(@PathVariable UUID id, @PathVariable UUID fieldId,
+    public ExtractionJobDto updateExtractionField(@AuthenticationPrincipal AppUserDetails principal,
+                                                  @PathVariable UUID id, @PathVariable UUID fieldId,
                                                   @Valid @RequestBody FieldValueUpdateRequest request) {
+        documentService.ensureOwnerOrAdmin(id, principal.getId());
         log.info("Correcting extracted field {} on document {}", fieldId, id);
         return extractionClient.updateField(id, fieldId, new UpdateFieldRequest(request.fieldValue()));
     }
 
     @PutMapping("/{id}/extraction/line-items/{lineItemId}")
-    public ExtractionJobDto updateExtractionLineItem(@PathVariable UUID id, @PathVariable UUID lineItemId,
+    public ExtractionJobDto updateExtractionLineItem(@AuthenticationPrincipal AppUserDetails principal,
+                                                     @PathVariable UUID id, @PathVariable UUID lineItemId,
                                                      @RequestBody LineItemUpdateRequest request) {
+        documentService.ensureOwnerOrAdmin(id, principal.getId());
         return extractionClient.updateLineItem(id, lineItemId, new UpdateLineItemRequest(
                 request.lineNumber(), request.description(), request.quantity(), request.unitPrice(),
                 request.vatRatePercent(), request.totalAmount(), request.category()));
     }
 
     @PostMapping("/{id}/apply-extraction")
-    public DocumentDetailResponse applyExtraction(@PathVariable UUID id) {
+    public DocumentDetailResponse applyExtraction(@AuthenticationPrincipal AppUserDetails principal, @PathVariable UUID id) {
+        documentService.ensureOwnerOrAdmin(id, principal.getId());
         ExtractionJobDto extraction = extractionClient.getByDocument(id);
         Map<String, String> fields = new LinkedHashMap<>();
         if (extraction != null && extraction.fields() != null) {
@@ -197,7 +211,9 @@ public class DocumentRestController {
     }
 
     @PutMapping("/{id}/fields")
-    public DocumentDetailResponse setFields(@PathVariable UUID id, @RequestBody ApplyFieldsRequest request) {
+    public DocumentDetailResponse setFields(@AuthenticationPrincipal AppUserDetails principal,
+                                            @PathVariable UUID id, @RequestBody ApplyFieldsRequest request) {
+        documentService.ensureOwnerOrAdmin(id, principal.getId());
         Map<String, String> fields = request.fields() == null ? Map.of() : request.fields();
         documentService.applyReviewedFields(id, fields);
         log.info("Saved {} reviewed header fields to document {}", fields.size(), id);

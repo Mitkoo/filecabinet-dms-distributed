@@ -54,6 +54,14 @@ public class FileStorageService {
         return target.toString();
     }
 
+    public void delete(String filePath) {
+        try {
+            Files.deleteIfExists(Paths.get(filePath).normalize());
+        } catch (IOException e) {
+            log.warn("Could not delete stored file {}: {}", filePath, e.getMessage());
+        }
+    }
+
     public Resource loadAsResource(String filePath) {
         try {
             Path path = Paths.get(filePath).normalize();

@@ -18,6 +18,8 @@ public interface ReviewWorkflowRepository extends JpaRepository<ReviewWorkflow, 
 
     Optional<ReviewWorkflow> findFirstByDocumentIdOrderByCreatedOnDesc(UUID documentId);
 
+    boolean existsByDocumentId(UUID documentId);
+
     @EntityGraph(attributePaths = {"initiator", "document"})
     Optional<ReviewWorkflow> findDetailById(UUID id);
 
