@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -83,19 +84,32 @@ public class InvoiceSanityChecker {
         if (value == null || value.isBlank()) {
             return null;
         }
-        String cleaned = value.replaceAll("[^0-9.\\-]", "");
-        if (cleaned.isEmpty() || cleaned.equals("-") || cleaned.equals(".")) {
+        String cleaned = value.replaceAll("[^0-9.,\\-]", "");
+        if (cleaned.isEmpty() || cleaned.equals("-")) {
+            return null;
+        }
+        boolean hasComma = cleaned.indexOf(',') >= 0;
+        boolean hasDot = cleaned.indexOf('.') >= 0;
+        String normalized = cleaned;
+        if (hasComma && hasDot) {
+            normalized = cleaned.lastIndexOf(',') > cleaned.lastIndexOf('.')
+                    ? cleaned.replace(".", "").replace(',', '.')
+                    : cleaned.replace(",", "");
+        } else if (hasComma) {
+            normalized = cleaned.replace(',', '.');
+        }
+        if (normalized.isEmpty() || normalized.equals("-") || normalized.equals(".")) {
             return null;
         }
         try {
-            return Double.parseDouble(cleaned);
+            return Double.parseDouble(normalized);
         } catch (NumberFormatException ex) {
             return null;
         }
     }
 
     private String money(Double value) {
-        return value == null ? "n/a" : String.format("%.2f", value);
+        return value == null ? "n/a" : String.format(Locale.ROOT, "%.2f", value);
     }
 
     private String trimRate(double rate) {
