@@ -44,10 +44,18 @@ public class UserRestController {
         if (principal.getId().equals(id)) {
             throw new InvalidStateException("You cannot change your own role.");
         }
-        Role role = Role.valueOf(request.role());
+        Role role = parseRole(request.role());
         User user = userService.updateRole(id, role);
         log.info("Changed role of {} to {}", user.getUsername(), role);
         return toResponse(user);
+    }
+
+    private Role parseRole(String value) {
+        try {
+            return Role.valueOf(value);
+        } catch (IllegalArgumentException ex) {
+            throw new InvalidStateException("Unknown role: " + value);
+        }
     }
 
     private UserSummaryResponse toResponse(User user) {
