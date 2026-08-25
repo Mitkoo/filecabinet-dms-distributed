@@ -21,6 +21,7 @@ Spring scheduling.
 | `DB_USERNAME` | database user (default `postgres`) |
 | `DB_PASSWORD` | database password |
 | `MISTRAL_API_KEY` | Mistral API key |
+| `JWT_SECRET` | signing secret shared with main-app, used to authenticate incoming requests (has a development default; set a real value in production) |
 
 Uses the `filecabinet_extraction` database.
 
@@ -31,6 +32,8 @@ Uses the `filecabinet_extraction` database.
 ```
 
 ## REST API
+
+Every endpoint below (except `/actuator/**`) requires a valid `Authorization: Bearer <token>` header, signed with `JWT_SECRET`. main-app relays the caller's token automatically.
 
 | Method | Path | Purpose |
 |---|---|---|

@@ -21,7 +21,7 @@ Spring Cloud OpenFeign, Spring Data Redis (caching).
 |---|---|
 | `DB_USERNAME` | database user (default `postgres`) |
 | `DB_PASSWORD` | database password |
-| `JWT_SECRET` | signing secret (has a development default) |
+| `JWT_SECRET` | signing secret shared with extraction-svc (has a development default; set a real value in production) |
 | `REDIS_HOST` / `REDIS_PORT` | Redis host/port (default `localhost:6379`) |
 | `EXTRACTION_SERVICE_URL` | extraction-svc base URL (default `http://localhost:8082`) |
 
